@@ -5,6 +5,9 @@ import path from "node:path";
 import readline from "node:readline";
 import { fileURLToPath } from "node:url";
 import type {
+  DbsnpIndelAlleleKind,
+  DbsnpIndelAnnotationRow,
+  EvidencePackAnnotationIndex,
   EvidencePackManifest,
   EvidencePackRecord,
   EvidencePackVariantConstraint,
@@ -186,6 +189,15 @@ function annotationText(rows: DbsnpAnnotationRow[]): string {
   ))}\n`;
 }
 
+function indelAnnotationText(rows: DbsnpIndelAnnotationRow[]): string {
+  return `${JSON.stringify(rows.sort((left, right) =>
+    left[0].localeCompare(right[0], undefined, { numeric: true }) ||
+    left[1].localeCompare(right[1]) ||
+    left[2] - right[2] ||
+    left[3].localeCompare(right[3]),
+  ))}\n`;
+}
+
 function rsidBucket(rsid: string): number {
   const numeric = Number.parseInt(rsid.replace(/^rs/i, ""), 10);
   if (Number.isFinite(numeric)) return numeric % shardModulo;
@@ -201,6 +213,26 @@ function sourceRole(sourceId: string): EvidenceSourceRole {
 }
 
 type DbsnpAnnotationRow = [chromosome: string, position: number, ref: string, alt: string, rsids: string[]];
+type DbsnpSnvRowAccumulator = Map<string, {
+  chromosome: string;
+  position: number;
+  ref: string;
+  alt: string;
+  rsids: Set<string>;
+}>;
+type DbsnpIndelRowAccumulator = Map<string, {
+  rsid: string;
+  chromosome: string;
+  position: number;
+  ref: string;
+  alts: string[];
+  kinds: DbsnpIndelAlleleKind[];
+}>;
+
+interface DbsnpQueryRows {
+  snvRows: DbsnpAnnotationRow[];
+  indelRows: DbsnpIndelAnnotationRow[];
+}
 
 function pushMapValue<K, V>(map: Map<K, V[]>, key: K, value: V): void {
   const values = map.get(key);
@@ -222,7 +254,73 @@ function evidenceRsids(records: EvidencePackRecord[]): string[] {
   return Array.from(rsids).sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
 }
 
-async function queryDbsnpRows(build: GenomeBuild, rsidFile: string, wantedRsids: Set<string>): Promise<DbsnpAnnotationRow[]> {
+function addDbsnpSnvRow(
+  rows: DbsnpSnvRowAccumulator,
+  chromosome: string,
+  position: number,
+  ref: string,
+  alt: string,
+  rsids: string[],
+): void {
+  const key = [chromosome, position, ref, alt].join(":");
+  const existing = rows.get(key);
+  if (existing) {
+    for (const rsid of rsids) existing.rsids.add(rsid);
+    return;
+  }
+
+  rows.set(key, { chromosome, position, ref, alt, rsids: new Set(rsids) });
+}
+
+function addDbsnpIndelRow(
+  rows: DbsnpIndelRowAccumulator,
+  chromosome: string,
+  position: number,
+  ref: string,
+  alt: string,
+  kind: DbsnpIndelAlleleKind,
+  rsids: string[],
+): void {
+  if (kind === "substitution") return;
+
+  for (const rsid of rsids) {
+    const key = [rsid, chromosome, position, ref].join(":");
+    const existing = rows.get(key);
+    if (existing) {
+      const existingAltIndex = existing.alts.indexOf(alt);
+      if (existingAltIndex === -1) {
+        existing.alts.push(alt);
+        existing.kinds.push(kind);
+      } else {
+        existing.kinds[existingAltIndex] = kind;
+      }
+      continue;
+    }
+
+    rows.set(key, {
+      rsid,
+      chromosome,
+      position,
+      ref,
+      alts: [alt],
+      kinds: [kind],
+    });
+  }
+}
+
+export function dbsnpAlleleKind(refRaw: string, altRaw: string): DbsnpIndelAlleleKind {
+  const ref = refRaw.trim().toUpperCase();
+  const alt = altRaw.trim().toUpperCase();
+  if (!ref || !alt || alt === "." || alt === "*" || alt.startsWith("<")) return "complex";
+  if (/^[ACGT]+$/.test(ref) && /^[ACGT]+$/.test(alt)) {
+    if (ref.length > alt.length && ref.startsWith(alt)) return "deletion";
+    if (alt.length > ref.length && alt.startsWith(ref)) return "insertion";
+    if (ref.length === alt.length) return "substitution";
+  }
+  return "complex";
+}
+
+async function queryDbsnpRows(build: GenomeBuild, rsidFile: string, wantedRsids: Set<string>): Promise<DbsnpQueryRows> {
   const source = dbsnpSources[build];
   const child = spawn("bcftools", [
     "query",
@@ -235,7 +333,8 @@ async function queryDbsnpRows(build: GenomeBuild, rsidFile: string, wantedRsids:
     stdio: ["ignore", "pipe", "pipe"],
   });
 
-  const rows = new Map<string, { chromosome: string; position: number; ref: string; alt: string; rsids: Set<string> }>();
+  const snvRows: DbsnpSnvRowAccumulator = new Map();
+  const indelRows: DbsnpIndelRowAccumulator = new Map();
   let stderr = "";
   child.stderr.setEncoding("utf8");
   child.stderr.on("data", (chunk) => {
@@ -247,8 +346,9 @@ async function queryDbsnpRows(build: GenomeBuild, rsidFile: string, wantedRsids:
     const [chromosomeRaw, positionRaw, idsRaw, refRaw, altRaw] = line.split("\t");
     const chromosome = normalizeChromosome(chromosomeRaw ?? "");
     const position = Number(positionRaw);
-    const ref = singleBaseAllele(refRaw ?? "");
-    if (!chromosome || !Number.isFinite(position) || !ref) continue;
+    const refRawValue = (refRaw ?? "").trim().toUpperCase();
+    const refBase = singleBaseAllele(refRawValue);
+    if (!chromosome || !Number.isFinite(position) || !refRawValue) continue;
 
     const rsids = (idsRaw ?? "")
       .split(/[;,]/)
@@ -257,15 +357,14 @@ async function queryDbsnpRows(build: GenomeBuild, rsidFile: string, wantedRsids:
     if (rsids.length === 0) continue;
 
     for (const altValue of (altRaw ?? "").split(",")) {
-      const alt = singleBaseAllele(altValue);
-      if (!alt) continue;
-      const key = [chromosome, position, ref, alt].join(":");
-      const existing = rows.get(key);
-      if (existing) {
-        for (const rsid of rsids) existing.rsids.add(rsid);
-      } else {
-        rows.set(key, { chromosome, position, ref, alt, rsids: new Set(rsids) });
+      const altRawValue = altValue.trim().toUpperCase();
+      const altBase = singleBaseAllele(altRawValue);
+      if (refBase && altBase) {
+        addDbsnpSnvRow(snvRows, chromosome, position, refBase, altBase, rsids);
       }
+
+      const kind = dbsnpAlleleKind(refRawValue, altRawValue);
+      addDbsnpIndelRow(indelRows, chromosome, position, refRawValue, altRawValue, kind, rsids);
     }
   }
 
@@ -277,13 +376,49 @@ async function queryDbsnpRows(build: GenomeBuild, rsidFile: string, wantedRsids:
     throw new Error(`bcftools dbSNP query failed for ${build}: ${stderr.trim() || `exit ${exitCode}`}`);
   }
 
-  return Array.from(rows.values(), (row): DbsnpAnnotationRow => [
-    row.chromosome,
-    row.position,
-    row.ref,
-    row.alt,
-    Array.from(row.rsids).sort(),
-  ]);
+  return {
+    snvRows: Array.from(snvRows.values(), (row): DbsnpAnnotationRow => [
+      row.chromosome,
+      row.position,
+      row.ref,
+      row.alt,
+      Array.from(row.rsids).sort(),
+    ]),
+    indelRows: Array.from(indelRows.values(), (row): DbsnpIndelAnnotationRow => [
+      row.rsid,
+      row.chromosome,
+      row.position,
+      row.ref,
+      row.alts,
+      row.kinds,
+    ]),
+  };
+}
+
+async function writeAnnotationIndex(params: {
+  targetDir: string;
+  build: GenomeBuild;
+  sourcePath: string;
+  recordsPath: string;
+  text: string;
+  recordCount: number;
+  matchedRsidCount: number;
+  totalRsidCount: number;
+  check: boolean;
+}): Promise<{ index: EvidencePackAnnotationIndex; changed: boolean }> {
+  const changed = await writeIfChanged(path.join(params.targetDir, params.recordsPath), params.text, params.check);
+  return {
+    changed,
+    index: {
+      build: params.build,
+      recordsPath: params.recordsPath,
+      recordsSha256: sha256(params.text),
+      recordCount: params.recordCount,
+      matchedRsidCount: params.matchedRsidCount,
+      missingRsidCount: Math.max(0, params.totalRsidCount - params.matchedRsidCount),
+      sourcePath: params.sourcePath,
+    },
+  };
 }
 
 async function buildAnnotationIndexes(
@@ -291,7 +426,11 @@ async function buildAnnotationIndexes(
   targetDir: string,
   check: boolean,
   existingManifest: Partial<EvidencePackManifest> | null,
-): Promise<{ indexes: NonNullable<EvidencePackManifest["annotationIndexes"]>; changed: boolean }> {
+): Promise<{
+  indexes: NonNullable<EvidencePackManifest["annotationIndexes"]>;
+  indelIndexes: NonNullable<EvidencePackManifest["indelAnnotationIndexes"]>;
+  changed: boolean;
+}> {
   const rsids = evidenceRsids(records);
   const wantedRsids = new Set(rsids);
   const rsidFile = path.join(cacheRoot, "dbsnp", "current-evidence-rsids.txt");
@@ -299,6 +438,7 @@ async function buildAnnotationIndexes(
   await writeFile(rsidFile, `${rsids.join("\n")}\n`);
 
   const indexes: NonNullable<EvidencePackManifest["annotationIndexes"]> = [];
+  const indelIndexes: NonNullable<EvidencePackManifest["indelAnnotationIndexes"]> = [];
   let changed = false;
   let usedCachedManifest = false;
 
@@ -306,34 +446,60 @@ async function buildAnnotationIndexes(
     const source = dbsnpSources[build];
     if (!dbsnpSourceReady(build)) {
       const existing = existingManifest?.annotationIndexes?.find((index) => index.build === build);
+      const existingIndel = existingManifest?.indelAnnotationIndexes?.find((index) => index.build === build);
       if (existing) {
         indexes.push(existing);
+        usedCachedManifest = true;
+      }
+      if (existingIndel) {
+        indelIndexes.push(existingIndel);
         usedCachedManifest = true;
       }
       continue;
     }
 
-    const rows = await queryDbsnpRows(build, rsidFile, wantedRsids);
-    const matchedRsids = new Set(rows.flatMap((row) => row[4]));
+    const { snvRows, indelRows } = await queryDbsnpRows(build, rsidFile, wantedRsids);
+    const sourcePath = path.relative(repoRoot, source.path);
+    const matchedRsids = new Set(snvRows.flatMap((row) => row[4]));
     const recordsPath = `annotation/dbsnp-${build.toLowerCase()}.json`;
-    const text = annotationText(rows);
-    changed = (await writeIfChanged(path.join(targetDir, recordsPath), text, check)) || changed;
-    indexes.push({
+    const text = annotationText(snvRows);
+    const annotationIndex = await writeAnnotationIndex({
       build,
+      targetDir,
       recordsPath,
-      recordsSha256: sha256(text),
-      recordCount: rows.length,
+      text,
+      recordCount: snvRows.length,
       matchedRsidCount: matchedRsids.size,
-      missingRsidCount: Math.max(0, rsids.length - matchedRsids.size),
-      sourcePath: path.relative(repoRoot, source.path),
+      totalRsidCount: rsids.length,
+      sourcePath,
+      check,
     });
+    changed = annotationIndex.changed || changed;
+    indexes.push(annotationIndex.index);
+
+    const indelMatchedRsids = new Set(indelRows.map((row) => row[0]));
+    const indelRecordsPath = `annotation/dbsnp-indels-${build.toLowerCase()}.json`;
+    const indelText = indelAnnotationText(indelRows);
+    const indelAnnotationIndex = await writeAnnotationIndex({
+      build,
+      targetDir,
+      recordsPath: indelRecordsPath,
+      text: indelText,
+      recordCount: indelRows.length,
+      matchedRsidCount: indelMatchedRsids.size,
+      totalRsidCount: rsids.length,
+      sourcePath,
+      check,
+    });
+    changed = indelAnnotationIndex.changed || changed;
+    indelIndexes.push(indelAnnotationIndex.index);
   }
 
   if (usedCachedManifest) {
     console.log("dbSNP source cache missing for one or more builds; preserving existing annotation manifest entries.");
   }
 
-  return { indexes, changed };
+  return { indexes, indelIndexes, changed };
 }
 
 function categoryForClinvar(significance: string): InsightCategory {
@@ -1834,6 +2000,7 @@ async function main(): Promise<void> {
     shardModulo,
     shards,
     ...(annotationResult.indexes.length > 0 ? { annotationIndexes: annotationResult.indexes } : {}),
+    ...(annotationResult.indelIndexes.length > 0 ? { indelAnnotationIndexes: annotationResult.indelIndexes } : {}),
     recordCount: records.length,
     attribution,
     sources: sourceMetadata.map((source) => {

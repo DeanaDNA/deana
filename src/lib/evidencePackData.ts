@@ -1,10 +1,12 @@
 import {
   CompactMarker,
+  DbsnpIndelAnnotationRow,
   EvidencePackManifest,
   EvidencePackMatch,
   EvidencePackRecord,
   EvidencePackVariantConstraint,
   GenomeBuild,
+  IndelPositionStatus,
   MatchedMarker,
 } from "../types";
 
@@ -15,6 +17,7 @@ const DEFAULT_SHARD_MODULO = 256;
 
 type EvidencePackShard = NonNullable<EvidencePackManifest["shards"]>[number];
 type MarkerLookup = Map<string, CompactMarker>;
+export type DbsnpIndelContextLookup = Map<string, DbsnpIndelAnnotationRow[]>;
 
 export interface LocalEvidencePackMatchProgress {
   manifest: EvidencePackManifest;
@@ -53,6 +56,7 @@ function alleleCount(genotype: string | null, allele?: string): number | null {
 interface MatchedAlleleResult {
   allele: string;
   alleleCount: number;
+  indelPositionStatus?: IndelPositionStatus;
 }
 
 const CONSTRAINT_REQUIRED_SOURCES = new Set(["clingen", "clinvar", "cpic", "gwas", "pharmgkb"]);
@@ -64,6 +68,44 @@ function validRiskAllele(allele?: string): string | null {
 
 function supportedGenomeBuild(build?: string): GenomeBuild | null {
   return build === "GRCh37" || build === "GRCh38" ? build : null;
+}
+
+function indelLookupKey(build: GenomeBuild, rsid: string): string {
+  return `${build}:${rsid.toLowerCase()}`;
+}
+
+function dbsnpIndelRowKey(row: DbsnpIndelAnnotationRow): string {
+  return `${row[1]}:${row[2]}:${row[3]}:${row[4].join(",")}:${row[5].join(",")}`;
+}
+
+export function buildDbsnpIndelContextLookup(
+  indexes: Partial<Record<GenomeBuild, DbsnpIndelAnnotationRow[]>>,
+): DbsnpIndelContextLookup {
+  const lookup: DbsnpIndelContextLookup = new Map();
+  const rowKeysByLookupKey = new Map<string, Set<string>>();
+  for (const [build, rows] of Object.entries(indexes) as Array<[GenomeBuild, DbsnpIndelAnnotationRow[] | undefined]>) {
+    for (const row of rows ?? []) {
+      const key = indelLookupKey(build, row[0]);
+      const rowKey = dbsnpIndelRowKey(row);
+      const existing = lookup.get(key);
+      if (existing) {
+        const rowKeys = rowKeysByLookupKey.get(key);
+        if (!rowKeys?.has(rowKey)) {
+          existing.push(row);
+          rowKeys?.add(rowKey);
+        }
+      } else {
+        lookup.set(key, [row]);
+        rowKeysByLookupKey.set(key, new Set([rowKey]));
+      }
+    }
+  }
+  return lookup;
+}
+
+function indelPositionStatus(marker: CompactMarker, row: DbsnpIndelAnnotationRow): IndelPositionStatus {
+  if (marker[2] === row[2]) return "exact";
+  return Math.abs(marker[2] - row[2]) <= 10 ? "near" : "different";
 }
 
 function valueForBuildOrUnambiguous<T>(
@@ -127,10 +169,46 @@ function variantConstraintAlleleCount(genotype: string | null, constraint: Evide
   return countGenotypeSymbols(genotype, (value) => value === "I");
 }
 
+function dbsnpIndelSupportForConstraint(
+  rsid: string,
+  marker: CompactMarker,
+  constraint: EvidencePackVariantConstraint,
+  build: string | undefined,
+  indelContextLookup: DbsnpIndelContextLookup | undefined,
+): { positionStatus: IndelPositionStatus } | null {
+  const supportedBuild = supportedGenomeBuild(build);
+  if (!supportedBuild || !indelContextLookup) return null;
+
+  const rows = indelContextLookup.get(indelLookupKey(supportedBuild, rsid)) ?? [];
+  if (rows.length !== 1) return null;
+
+  const row = rows[0];
+  const [, , , ref, alts, kinds] = row;
+  const normalizedRef = constraint.ref.toUpperCase();
+  const normalizedAlt = constraint.alt.toUpperCase();
+  let directionKind: "deletion" | "insertion" | null = null;
+  for (const kind of kinds) {
+    if (kind === "complex") return null;
+    if (kind !== "deletion" && kind !== "insertion") continue;
+    if (directionKind && directionKind !== kind) return null;
+    directionKind = kind;
+  }
+  if (directionKind !== constraint.type) return null;
+
+  const altIndex = alts.findIndex((alt) => alt.toUpperCase() === normalizedAlt);
+  if (ref.toUpperCase() !== normalizedRef || altIndex === -1) return null;
+  if (kinds[altIndex] !== constraint.type) return null;
+
+  return { positionStatus: indelPositionStatus(marker, row) };
+}
+
 function matchedEvidenceAllele(
   genotype: string | null,
+  rsid: string,
+  marker: CompactMarker | undefined,
   record: EvidencePackRecord,
   build?: string,
+  indelContextLookup?: DbsnpIndelContextLookup,
 ): MatchedAlleleResult | null {
   const riskAllele = riskAlleleForBuild(record, build);
   if (riskAllele) {
@@ -140,8 +218,15 @@ function matchedEvidenceAllele(
 
   const variantConstraint = variantConstraintForBuild(record, build);
   if (variantConstraint) {
+    if (!marker) return null;
+    const dbsnpSupport = dbsnpIndelSupportForConstraint(rsid, marker, variantConstraint, build, indelContextLookup);
+    if (!dbsnpSupport) return null;
     const count = variantConstraintAlleleCount(genotype, variantConstraint);
-    return count !== null ? { allele: variantConstraint.matchAllele, alleleCount: count } : null;
+    return count !== null ? {
+      allele: variantConstraint.matchAllele,
+      alleleCount: count,
+      indelPositionStatus: dbsnpSupport.positionStatus,
+    } : null;
   }
 
   return null;
@@ -153,6 +238,7 @@ function matchedMarkerForRecord(
   record: EvidencePackRecord,
   gene?: string,
   build?: string,
+  indelContextLookup?: DbsnpIndelContextLookup,
 ): MatchedMarker | null {
   const genotype = canonicalGenotype(marker?.[3] ?? null);
   if (!genotype) return null;
@@ -171,7 +257,7 @@ function matchedMarkerForRecord(
     };
   }
 
-  const matchedAllele = matchedEvidenceAllele(genotype, record, build);
+  const matchedAllele = matchedEvidenceAllele(genotype, rsid, marker, record, build, indelContextLookup);
   if (matchedAllele && matchedAllele.alleleCount === 0) return null;
   if (!matchedAllele && CONSTRAINT_REQUIRED_SOURCES.has(record.sourceId)) return null;
 
@@ -183,6 +269,7 @@ function matchedMarkerForRecord(
     gene,
     matchedAllele: matchedAllele?.allele,
     matchedAlleleCount: matchedAllele?.alleleCount ?? null,
+    ...(matchedAllele?.indelPositionStatus ? { indelPositionStatus: matchedAllele.indelPositionStatus } : {}),
   };
 }
 
@@ -259,6 +346,33 @@ async function fetchRecordsFile(
   return JSON.parse(recordsText) as EvidencePackRecord[];
 }
 
+async function fetchDbsnpIndelContextLookup(
+  fetchImpl: typeof fetch,
+  manifest: EvidencePackManifest,
+  build?: string,
+): Promise<DbsnpIndelContextLookup> {
+  const supportedBuild = supportedGenomeBuild(build);
+  if (!supportedBuild || !manifest.indelAnnotationIndexes || manifest.indelAnnotationIndexes.length === 0) {
+    return new Map();
+  }
+
+  const index = manifest.indelAnnotationIndexes.find((entry) => entry.build === supportedBuild);
+  if (!index) return new Map();
+
+  const response = await fetchImpl(`${LOCAL_EVIDENCE_PACK_BASE}/${index.recordsPath}`, { cache: "force-cache" });
+  if (!response.ok) {
+    throw new Error(`Local dbSNP indel annotation index failed with ${response.status}`);
+  }
+  const text = await response.text();
+  const digest = await sha256(text);
+  if (digest !== index.recordsSha256) {
+    throw new Error("Local dbSNP indel annotation checksum did not match the manifest.");
+  }
+  const indexEntries = [[index.build, JSON.parse(text) as DbsnpIndelAnnotationRow[]]] as const;
+
+  return buildDbsnpIndelContextLookup(Object.fromEntries(indexEntries));
+}
+
 export async function fetchLocalEvidencePack(
   fetchImpl: typeof fetch = fetch,
   markersForShardSelection: CompactMarker[] = [],
@@ -300,13 +414,21 @@ function matchEvidenceRecord(
   markerLookup: MarkerLookup,
   record: EvidencePackRecord,
   build?: string,
+  indelContextLookup?: DbsnpIndelContextLookup,
 ): EvidencePackMatch | null {
   const matchedMarkers: MatchedMarker[] = [];
 
   for (let index = 0; index < record.markerIds.length; index += 1) {
     const rsid = record.markerIds[index];
     const marker = markerLookup.get(rsid.toLowerCase());
-    const matchedMarker = matchedMarkerForRecord(marker, rsid, record, record.genes[index] ?? record.genes[0], build);
+    const matchedMarker = matchedMarkerForRecord(
+      marker,
+      rsid,
+      record,
+      record.genes[index] ?? record.genes[0],
+      build,
+      indelContextLookup,
+    );
     if (matchedMarker) {
       matchedMarkers.push(matchedMarker);
     }
@@ -319,11 +441,12 @@ function matchEvidenceRecordsWithMarkerLookup(
   markerLookup: MarkerLookup,
   records: EvidencePackRecord[],
   build?: string,
+  indelContextLookup?: DbsnpIndelContextLookup,
 ): EvidencePackMatch[] {
   const matches: EvidencePackMatch[] = [];
 
   for (const record of records) {
-    const match = matchEvidenceRecord(markerLookup, record, build);
+    const match = matchEvidenceRecord(markerLookup, record, build, indelContextLookup);
     if (match) matches.push(match);
   }
 
@@ -342,6 +465,7 @@ export async function matchLocalEvidencePack(
   matchedRsidCount: number;
 }> {
   const manifest = await fetchLocalEvidencePackManifest(fetchImpl);
+  const indelContextLookup = await fetchDbsnpIndelContextLookup(fetchImpl, manifest, build);
   const markerLookup = createMarkerLookup(markers);
   const matchedRecords: EvidencePackMatch[] = [];
   const matchedEntryIds = new Set<string>();
@@ -357,7 +481,7 @@ export async function matchLocalEvidencePack(
 
   const addRecordMatches = (records: EvidencePackRecord[]) => {
     for (const record of records) {
-      const match = matchEvidenceRecord(markerLookup, record, build);
+      const match = matchEvidenceRecord(markerLookup, record, build, indelContextLookup);
       if (match) addMatch(match);
     }
   };
@@ -430,6 +554,7 @@ export function matchEvidenceRecords(
   markers: CompactMarker[],
   records: EvidencePackRecord[],
   build?: string,
+  indelContextLookup?: DbsnpIndelContextLookup,
 ): EvidencePackMatch[] {
-  return matchEvidenceRecordsWithMarkerLookup(createMarkerLookup(markers), records, build);
+  return matchEvidenceRecordsWithMarkerLookup(createMarkerLookup(markers), records, build, indelContextLookup);
 }

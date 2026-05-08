@@ -28,6 +28,16 @@ export type PublicationBucket = "0" | "1-5" | "6-20" | "21+";
 export type ReportEntryKind = "curated" | "local-evidence";
 export type EvidenceEnrichmentStatus = "idle" | "running" | "partial" | "complete" | "failed";
 export type EvidenceSourceRole = "primary" | "frequency-context" | "citation" | "supplementary";
+export type DbsnpIndelAlleleKind = "deletion" | "insertion" | "substitution" | "complex";
+export type IndelPositionStatus = "exact" | "near" | "different";
+export type DbsnpIndelAnnotationRow = [
+  rsid: string,
+  chromosome: string,
+  position: number,
+  ref: string,
+  alts: string[],
+  kinds: DbsnpIndelAlleleKind[],
+];
 
 export type CompactMarker = [rsid: string, chromosome: string, position: number, genotype: string];
 
@@ -81,16 +91,8 @@ export interface EvidencePackManifest {
     recordCount: number;
     bucket: number;
   }>;
-  annotationIndexes?: Array<{
-    build: GenomeBuild;
-    recordsPath: string;
-    recordsSha256: string;
-    recordCount: number;
-    matchedRsidCount: number;
-    missingRsidCount: number;
-    sourcePath: string;
-    sourceSha256?: string;
-  }>;
+  annotationIndexes?: EvidencePackAnnotationIndex[];
+  indelAnnotationIndexes?: EvidencePackAnnotationIndex[];
   recordCount?: number;
   attribution: string;
   sources: Array<{
@@ -100,6 +102,17 @@ export interface EvidencePackManifest {
     url: string;
     role: EvidenceSourceRole;
   }>;
+}
+
+export interface EvidencePackAnnotationIndex {
+    build: GenomeBuild;
+    recordsPath: string;
+    recordsSha256: string;
+    recordCount: number;
+    matchedRsidCount: number;
+    missingRsidCount: number;
+    sourcePath: string;
+    sourceSha256?: string;
 }
 
 export interface EvidencePackVariantConstraint {
@@ -166,6 +179,7 @@ export interface MatchedMarker {
   gene?: string;
   matchedAllele?: string;
   matchedAlleleCount?: number | null;
+  indelPositionStatus?: IndelPositionStatus;
 }
 
 export interface ReportEntrySource {

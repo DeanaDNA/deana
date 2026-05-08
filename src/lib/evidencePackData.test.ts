@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   LOCAL_EVIDENCE_PACK_VERSION,
+  buildDbsnpIndelContextLookup,
   fetchLocalEvidencePack,
   matchEvidenceRecords,
   matchLocalEvidencePack,
 } from "./evidencePackData";
-import type { CompactMarker, EvidencePackManifest, EvidencePackRecord } from "../types";
+import type { CompactMarker, DbsnpIndelAnnotationRow, EvidencePackManifest, EvidencePackRecord, EvidencePackVariantConstraint } from "../types";
 
 async function sha256(value: string): Promise<string> {
   const bytes = new TextEncoder().encode(value);
@@ -35,6 +36,35 @@ function makeRecord(id: string, rsid: string): EvidencePackRecord {
     pmids: [],
     notes: ["test"],
   };
+}
+
+function indelContext(
+  build: "GRCh37" | "GRCh38",
+  rows: DbsnpIndelAnnotationRow[],
+) {
+  return buildDbsnpIndelContextLookup({ [build]: rows });
+}
+
+function clinvarIndelRecord(
+  id: string,
+  rsid: string,
+  constraint: EvidencePackVariantConstraint,
+): EvidencePackRecord {
+  return {
+    ...makeRecord(id, rsid),
+    sourceId: "clinvar",
+    variantConstraintsByBuild: {
+      GRCh37: constraint,
+    },
+  };
+}
+
+function matchClinvarIndel(
+  marker: CompactMarker,
+  record: EvidencePackRecord,
+  lookup = indelContext("GRCh37", []),
+) {
+  return matchEvidenceRecords([marker], [record], "GRCh37", lookup);
 }
 
 describe("fetchLocalEvidencePack", () => {
@@ -227,6 +257,55 @@ describe("fetchLocalEvidencePack", () => {
     ]);
   });
 
+  it("loads dbSNP indel context before matching ClinVar DD and II records", async () => {
+    const record = clinvarIndelRecord("clinvar-deletion", "rs137853281", {
+      type: "deletion",
+      ref: "CG",
+      alt: "C",
+      matchAllele: "D",
+    });
+    const recordsText = text([record]);
+    const indelRows: DbsnpIndelAnnotationRow[] = [["rs137853281", "13", 52516532, "CG", ["C"], ["deletion"]]];
+    const indelText = `${JSON.stringify(indelRows)}\n`;
+    const manifest: EvidencePackManifest = {
+      version: LOCAL_EVIDENCE_PACK_VERSION,
+      schemaVersion: 1,
+      generatedAt: "2026-04-25T00:00:00.000Z",
+      recordsPath: "records.json",
+      recordsSha256: await sha256(recordsText),
+      indelAnnotationIndexes: [
+        {
+          build: "GRCh37",
+          recordsPath: "annotation/dbsnp-indels-grch37.json",
+          recordsSha256: await sha256(indelText),
+          recordCount: 1,
+          matchedRsidCount: 1,
+          missingRsidCount: 0,
+          sourcePath: ".evidence-cache/dbsnp/GRCh37/dbsnp.vcf.gz",
+        },
+      ],
+      recordCount: 1,
+      attribution: "test",
+      sources: [],
+    };
+    const fetchImpl = async (url: string | URL | Request): Promise<Response> => {
+      const href = String(url);
+      if (href.endsWith("/manifest.json")) return Response.json(manifest);
+      if (href.endsWith("/annotation/dbsnp-indels-grch37.json")) return new Response(indelText);
+      if (href.endsWith("/records.json")) return new Response(recordsText);
+      return new Response("not found", { status: 404 });
+    };
+
+    const result = await matchLocalEvidencePack(fetchImpl as typeof fetch, [["rs137853281", "13", 52516532, "DD"]], "GRCh37");
+
+    expect(result.matchedRecords).toHaveLength(1);
+    expect(result.matchedRecords[0].matchedMarkers[0]).toMatchObject({
+      matchedAllele: "D",
+      matchedAlleleCount: 2,
+      indelPositionStatus: "exact",
+    });
+  });
+
   it("normalizes uploaded genotypes when matching local records", () => {
     const matches = matchEvidenceRecords(
       [["rs762551", "15", 75041917, "CA"]],
@@ -285,40 +364,155 @@ describe("fetchLocalEvidencePack", () => {
     expect(matchEvidenceRecords([["rs1", "1", 1, "AA"]], [record], "Unknown")).toHaveLength(0);
   });
 
-  it("matches ClinVar deletion records only against explicit deletion genotypes", () => {
+  it("matches ClinVar deletion records only when dbSNP supports the exact deletion", () => {
     const deletionConstraint = {
       type: "deletion" as const,
       ref: "CG",
       alt: "C",
       matchAllele: "D" as const,
     };
-    const record: EvidencePackRecord = {
-      ...makeRecord("clinvar-deletion", "rs137853281"),
-      sourceId: "clinvar",
-      variantConstraintsByBuild: {
-        GRCh37: deletionConstraint,
-        GRCh38: deletionConstraint,
-      },
-    };
+    const record = clinvarIndelRecord("clinvar-deletion", "rs137853281", deletionConstraint);
+    const lookup = indelContext("GRCh37", [["rs137853281", "13", 52516532, "CG", ["C"], ["deletion"]]]);
 
-    expect(matchEvidenceRecords([["rs137853281", "13", 52516532, "CC"]], [record], "GRCh37")).toHaveLength(0);
-    expect(matchEvidenceRecords([["rs137853281", "13", 52516532, "II"]], [record], "GRCh37")).toHaveLength(0);
-    expect(matchEvidenceRecords([["rs137853281", "13", 52516532, "--"]], [record], "GRCh37")).toHaveLength(0);
+    expect(matchClinvarIndel(["rs137853281", "13", 52516532, "CC"], record, lookup)).toHaveLength(0);
+    expect(matchClinvarIndel(["rs137853281", "13", 52516532, "II"], record, lookup)).toHaveLength(0);
+    expect(matchClinvarIndel(["rs137853281", "13", 52516532, "--"], record, lookup)).toHaveLength(0);
+    expect(matchClinvarIndel(["rs137853281", "13", 52516532, "DD"], record)).toHaveLength(0);
 
-    const heterozygousMatches = matchEvidenceRecords([["rs137853281", "13", 52516532, "DI"]], [record], "GRCh37");
+    const heterozygousMatches = matchClinvarIndel(["rs137853281", "13", 52516532, "DI"], record, lookup);
     expect(heterozygousMatches).toHaveLength(1);
     expect(heterozygousMatches[0].matchedMarkers[0]).toMatchObject({
       matchedAllele: "D",
       matchedAlleleCount: 1,
+      indelPositionStatus: "exact",
     });
 
-    const homozygousMatches = matchEvidenceRecords([["rs137853281", "13", 52516532, "DD"]], [record], "GRCh37");
+    const homozygousMatches = matchClinvarIndel(["rs137853281", "13", 52516532, "DD"], record, lookup);
     expect(homozygousMatches).toHaveLength(1);
     expect(homozygousMatches[0].matchedMarkers[0].matchedAlleleCount).toBe(2);
 
-    const dashMatches = matchEvidenceRecords([["rs137853281", "13", 52516532, "-C"]], [record], "GRCh37");
+    const dashMatches = matchClinvarIndel(["rs137853281", "13", 52516532, "-C"], record, lookup);
     expect(dashMatches).toHaveLength(1);
     expect(dashMatches[0].matchedMarkers[0].matchedAlleleCount).toBe(1);
+  });
+
+  it("matches ClinVar insertion records only when dbSNP has one insertion direction and the exact allele", () => {
+    const insertionConstraint = {
+      type: "insertion" as const,
+      ref: "C",
+      alt: "CT",
+      matchAllele: "I" as const,
+    };
+    const record = clinvarIndelRecord("clinvar-insertion", "rs121908781", insertionConstraint);
+    const lookup = indelContext("GRCh37", [["rs121908781", "7", 117199644, "C", ["CT"], ["insertion"]]]);
+
+    expect(matchClinvarIndel(["rs121908781", "7", 117199644, "DD"], record, lookup)).toHaveLength(0);
+    expect(matchClinvarIndel(["rs121908781", "7", 117199644, "II"], record, lookup)).toHaveLength(1);
+    expect(matchClinvarIndel(["rs121908781", "7", 117199650, "II"], record, lookup)[0].matchedMarkers[0]).toMatchObject({
+      indelPositionStatus: "near",
+    });
+  });
+
+  it("rejects ClinVar DD and II calls when dbSNP is multi-directional, missing, or lacks the exact allele", () => {
+    const deletionConstraint = {
+      type: "deletion" as const,
+      ref: "AT",
+      alt: "A",
+      matchAllele: "D" as const,
+    };
+    const insertionConstraint = {
+      type: "insertion" as const,
+      ref: "A",
+      alt: "AT",
+      matchAllele: "I" as const,
+    };
+    const multiAllelicLookup = indelContext("GRCh37", [["rs267607694", "1", 100, "A", ["AT", "A"], ["insertion", "deletion"]]]);
+    const absentAlleleLookup = indelContext("GRCh37", [["rs80338682", "1", 100, "AT", ["AG"], ["complex"]]]);
+    const conflictingRowsLookup = indelContext("GRCh37", [
+      ["rs367543043", "1", 100, "AT", ["A"], ["deletion"]],
+      ["rs367543043", "1", 101, "AT", ["A"], ["deletion"]],
+    ]);
+
+    expect(matchClinvarIndel(
+      ["rs267607694", "1", 100, "DD"],
+      clinvarIndelRecord("multi-directional", "rs267607694", deletionConstraint),
+      multiAllelicLookup,
+    )).toHaveLength(0);
+    expect(matchClinvarIndel(
+      ["rs267607694", "1", 100, "II"],
+      clinvarIndelRecord("multi-directional-insertion", "rs267607694", insertionConstraint),
+      multiAllelicLookup,
+    )).toHaveLength(0);
+    expect(matchClinvarIndel(
+      ["rs80338682", "1", 100, "DD"],
+      clinvarIndelRecord("exact-absent", "rs80338682", deletionConstraint),
+      absentAlleleLookup,
+    )).toHaveLength(0);
+    expect(matchClinvarIndel(
+      ["rs367543043", "1", 100, "DD"],
+      clinvarIndelRecord("conflicting-dbsnp", "rs367543043", deletionConstraint),
+      conflictingRowsLookup,
+    )).toHaveLength(0);
+    expect(matchClinvarIndel(
+      ["rs558037268", "1", 100, "DD"],
+      clinvarIndelRecord("missing-dbsnp", "rs558037268", deletionConstraint),
+      indelContext("GRCh37", []),
+    )).toHaveLength(0);
+  });
+
+  it("does not surface known ambiguous ClinVar DD and II false-positive examples", () => {
+    const examples: Array<{
+      rsid: string;
+      genotype: string;
+      constraint: EvidencePackVariantConstraint;
+      row: DbsnpIndelAnnotationRow;
+    }> = [
+      {
+        rsid: "rs137853287",
+        genotype: "DD",
+        constraint: { type: "deletion", ref: "AG", alt: "A", matchAllele: "D" },
+        row: ["rs137853287", "13", 1, "A", ["AG", "A"], ["insertion", "deletion"]],
+      },
+      {
+        rsid: "rs121908781",
+        genotype: "II",
+        constraint: { type: "insertion", ref: "C", alt: "CT", matchAllele: "I" },
+        row: ["rs121908781", "7", 2, "C", ["CT", "C"], ["insertion", "deletion"]],
+      },
+      {
+        rsid: "rs267607694",
+        genotype: "DD",
+        constraint: { type: "deletion", ref: "AT", alt: "A", matchAllele: "D" },
+        row: ["rs267607694", "1", 3, "A", ["AT", "A"], ["insertion", "deletion"]],
+      },
+      {
+        rsid: "rs80338682",
+        genotype: "DD",
+        constraint: { type: "deletion", ref: "GT", alt: "G", matchAllele: "D" },
+        row: ["rs80338682", "2", 4, "G", ["GT", "G"], ["insertion", "deletion"]],
+      },
+      {
+        rsid: "rs367543043",
+        genotype: "DD",
+        constraint: { type: "deletion", ref: "CA", alt: "C", matchAllele: "D" },
+        row: ["rs367543043", "3", 5, "C", ["CA", "C"], ["insertion", "deletion"]],
+      },
+      {
+        rsid: "rs558037268",
+        genotype: "II",
+        constraint: { type: "insertion", ref: "T", alt: "TA", matchAllele: "I" },
+        row: ["rs558037268", "4", 6, "T", ["TA", "T"], ["insertion", "deletion"]],
+      },
+    ];
+    const lookup = indelContext("GRCh37", examples.map((example) => example.row));
+
+    for (const example of examples) {
+      expect(matchClinvarIndel(
+        [example.rsid, example.row[1], example.row[2], example.genotype],
+        clinvarIndelRecord(`ambiguous-${example.rsid}`, example.rsid, example.constraint),
+        lookup,
+      )).toHaveLength(0);
+    }
   });
 
   it("allows buildless matching when build-specific risk alleles are unambiguous", () => {

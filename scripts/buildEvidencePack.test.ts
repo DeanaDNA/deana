@@ -3,6 +3,7 @@ import {
   clingenCandidateMarkersForDisease,
   clingenDiseaseWordsOverlap,
   clinvarRecord,
+  dbsnpAlleleKind,
   gwasDedupeKey,
   gwasKnownAlleleIndexFromRows,
   gwasRecords,
@@ -175,6 +176,16 @@ describe("clinvarRecord", () => {
       variantConstraintsByBuild: undefined,
     });
     expect(record?.notes).toContain("Reported alternate allele: T.");
+  });
+});
+
+describe("dbsnpAlleleKind", () => {
+  it("classifies VCF alleles used by the dbSNP indel guardrail", () => {
+    expect(dbsnpAlleleKind("CG", "C")).toBe("deletion");
+    expect(dbsnpAlleleKind("C", "CG")).toBe("insertion");
+    expect(dbsnpAlleleKind("CT", "GA")).toBe("substitution");
+    expect(dbsnpAlleleKind("CT", "CGA")).toBe("complex");
+    expect(dbsnpAlleleKind("C", "<DEL>")).toBe("complex");
   });
 });
 
