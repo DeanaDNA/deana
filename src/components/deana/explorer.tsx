@@ -236,7 +236,6 @@ export function SettingsModal({
     <div className="dn-modal-backdrop" role="presentation">
       <section className="dn-modal dn-settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <button className="dn-icon-button dn-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
-        <DeanaWordmark compact />
         <h1 id="settings-title">Settings</h1>
         <div className="dn-settings-section">
           <label className="dn-settings-label" htmlFor="settings-model-select">AI Model</label>
