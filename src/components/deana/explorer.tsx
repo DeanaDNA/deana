@@ -2,6 +2,17 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type De
 import { SORT_FILTER_OPTIONS, type ExplorerFilters } from "../../lib/explorer";
 import type { ExplorerTab, InsightCategory, MarkerSort, ProfileMeta, ReportEntry, ReportFacets, StoredMarkerSummary, StoredReportEntry } from "../../types";
 import { modelDisplayName } from "../../lib/ai/models";
+import {
+  byokProviderPresetFromBaseUrl,
+  byokProviderPresetFromId,
+  byokProviderPresetsForHost as providerPresetsForHost,
+  MAX_BYOK_CONTEXT_FINDINGS_LIMIT,
+  MAX_BYOK_USER_TEXT_LENGTH,
+  MIN_BYOK_CONTEXT_FINDINGS,
+  MIN_BYOK_USER_TEXT_LENGTH,
+  normalizeByokMaxFindings,
+  normalizeByokMaxMessageLength,
+} from "../../lib/aiChat";
 import type { DeanaSettings } from "../../lib/settings";
 import { DEANA_GITHUB_URL, PrivacyModal, SupportDeanaModal } from "./marketing";
 import { DeanaWordmark, Icon, IconName } from "./ui";
@@ -215,20 +226,17 @@ function HelpModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-const BYOK_PROVIDER_PRESETS: Array<{ label: string; baseUrl: string }> = [
-  { label: "OpenAI", baseUrl: "https://api.openai.com/v1" },
-  { label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1" },
-  { label: "Custom URL", baseUrl: "" },
-];
-
 export function SettingsModal({
   selectedModel,
   availableModels,
   showReasoning,
   byokEnabled: initialByokEnabled = false,
+  byokProviderId: initialByokProviderId = "",
   byokApiKey: initialByokApiKey = "",
   byokBaseUrl: initialByokBaseUrl = "",
   byokModelId: initialByokModelId = "",
+  byokMaxMessageLength: initialByokMaxMessageLength,
+  byokMaxFindings: initialByokMaxFindings,
   onSave,
   onClose,
 }: {
@@ -236,20 +244,33 @@ export function SettingsModal({
   availableModels: string[];
   showReasoning: boolean;
   byokEnabled?: boolean;
+  byokProviderId?: string;
   byokApiKey?: string;
   byokBaseUrl?: string;
   byokModelId?: string;
+  byokMaxMessageLength?: number;
+  byokMaxFindings?: number;
   onSave: (settings: DeanaSettings) => void;
   onClose: () => void;
 }) {
+  const initialByokPresets = providerPresetsForHost(window.location.hostname);
+  const initialByokPreset = initialByokProviderId
+    ? byokProviderPresetFromId(initialByokProviderId, initialByokPresets)
+    : byokProviderPresetFromBaseUrl(initialByokBaseUrl, initialByokPresets);
   const [pendingModel, setPendingModel] = useState(selectedModel);
   const [pendingShowReasoning, setPendingShowReasoning] = useState(showReasoning);
   const [pendingByokEnabled, setPendingByokEnabled] = useState(initialByokEnabled);
+  const [pendingByokProviderId, setPendingByokProviderId] = useState(initialByokPreset.providerId);
   const [pendingByokApiKey, setPendingByokApiKey] = useState(initialByokApiKey);
-  const [pendingByokBaseUrl, setPendingByokBaseUrl] = useState(initialByokBaseUrl);
+  const [pendingByokBaseUrl, setPendingByokBaseUrl] = useState(initialByokBaseUrl || initialByokPreset.baseUrl);
   const [pendingByokModelId, setPendingByokModelId] = useState(initialByokModelId);
+  const [pendingByokMaxMessageLength, setPendingByokMaxMessageLength] = useState(String(normalizeByokMaxMessageLength(initialByokMaxMessageLength)));
+  const [pendingByokMaxFindings, setPendingByokMaxFindings] = useState(String(normalizeByokMaxFindings(initialByokMaxFindings)));
 
-  const selectedPreset = BYOK_PROVIDER_PRESETS.find((p) => p.baseUrl === pendingByokBaseUrl) ?? BYOK_PROVIDER_PRESETS[BYOK_PROVIDER_PRESETS.length - 1];
+  const byokProviderPresets = providerPresetsForHost(window.location.hostname);
+  const selectedPreset = pendingByokProviderId
+    ? byokProviderPresetFromId(pendingByokProviderId, byokProviderPresets)
+    : byokProviderPresetFromBaseUrl(pendingByokBaseUrl, byokProviderPresets);
 
   return (
     <div className="dn-modal-backdrop" role="presentation">
@@ -313,11 +334,16 @@ export function SettingsModal({
                   <div className="dn-select-control">
                     <select
                       id="settings-byok-provider"
-                      value={selectedPreset.baseUrl}
-                      onChange={(e) => setPendingByokBaseUrl(e.target.value)}
+                      value={selectedPreset.providerId}
+                      onChange={(e) => {
+                        const preset = byokProviderPresetFromId(e.target.value, byokProviderPresets);
+                        setPendingByokProviderId(preset.providerId);
+                        setPendingByokBaseUrl(preset.baseUrl);
+                        if (!pendingByokModelId.trim()) setPendingByokModelId(preset.defaultModel);
+                      }}
                     >
-                      {BYOK_PROVIDER_PRESETS.map((preset) => (
-                        <option key={preset.label} value={preset.baseUrl}>{preset.label}</option>
+                      {byokProviderPresets.map((preset) => (
+                        <option key={preset.providerId} value={preset.providerId}>{preset.label}</option>
                       ))}
                     </select>
                     <Icon name="chevronDown" size={18} />
@@ -332,9 +358,12 @@ export function SettingsModal({
                       id="settings-byok-baseurl"
                       type="url"
                       className="dn-text-input"
-                      placeholder="https://your-endpoint.com/v1"
+                      placeholder="http://localhost:11434/v1"
                       value={pendingByokBaseUrl}
-                      onChange={(e) => setPendingByokBaseUrl(e.target.value)}
+                      onChange={(e) => {
+                        setPendingByokProviderId("custom");
+                        setPendingByokBaseUrl(e.target.value);
+                      }}
                       autoComplete="off"
                     />
                   </div>
@@ -361,10 +390,42 @@ export function SettingsModal({
                     id="settings-byok-model"
                     type="text"
                     className="dn-text-input"
-                    placeholder={selectedPreset.baseUrl.includes("openrouter") ? "openai/gpt-4o-mini" : "gpt-4o-mini"}
+                    placeholder={selectedPreset.defaultModel}
                     value={pendingByokModelId}
                     onChange={(e) => setPendingByokModelId(e.target.value)}
                     autoComplete="off"
+                  />
+                </div>
+              </div>
+              <div className="dn-settings-field-row">
+                <label className="dn-settings-sublabel" htmlFor="settings-byok-message-length">Max message length</label>
+                <p className="dn-settings-description">Maximum characters allowed in each message you send to your custom provider. Higher values can help with long questions but may increase cost or hit provider limits.</p>
+                <div className="dn-field dn-settings-field">
+                  <input
+                    id="settings-byok-message-length"
+                    type="number"
+                    className="dn-text-input"
+                    min={MIN_BYOK_USER_TEXT_LENGTH}
+                    max={MAX_BYOK_USER_TEXT_LENGTH}
+                    step={1}
+                    value={pendingByokMaxMessageLength}
+                    onChange={(e) => setPendingByokMaxMessageLength(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="dn-settings-field-row">
+                <label className="dn-settings-sublabel" htmlFor="settings-byok-max-findings">Max findings sent</label>
+                <p className="dn-settings-description">Maximum compact report findings Deana can include in chat context and local report-search results. The default is 50 for BYOK; increasing it sends more report context to your provider.</p>
+                <div className="dn-field dn-settings-field">
+                  <input
+                    id="settings-byok-max-findings"
+                    type="number"
+                    className="dn-text-input"
+                    min={MIN_BYOK_CONTEXT_FINDINGS}
+                    max={MAX_BYOK_CONTEXT_FINDINGS_LIMIT}
+                    step={1}
+                    value={pendingByokMaxFindings}
+                    onChange={(e) => setPendingByokMaxFindings(e.target.value)}
                   />
                 </div>
               </div>
@@ -380,9 +441,12 @@ export function SettingsModal({
               modelId: pendingModel,
               showReasoning: pendingShowReasoning,
               byokEnabled: pendingByokEnabled,
+              byokProviderId: pendingByokEnabled ? selectedPreset.providerId : undefined,
               byokApiKey: pendingByokEnabled ? pendingByokApiKey : undefined,
               byokBaseUrl: pendingByokEnabled ? pendingByokBaseUrl : undefined,
-              byokModelId: pendingByokEnabled ? pendingByokModelId : undefined,
+              byokModelId: pendingByokEnabled ? (pendingByokModelId.trim() || selectedPreset.defaultModel) : undefined,
+              byokMaxMessageLength: pendingByokEnabled ? normalizeByokMaxMessageLength(pendingByokMaxMessageLength) : undefined,
+              byokMaxFindings: pendingByokEnabled ? normalizeByokMaxFindings(pendingByokMaxFindings) : undefined,
             })}
           >
             Save

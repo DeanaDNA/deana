@@ -4,9 +4,12 @@ export interface DeanaSettings {
   modelId?: string;
   showReasoning?: boolean;
   byokEnabled?: boolean;
+  byokProviderId?: string;
   byokApiKey?: string;
   byokBaseUrl?: string;
   byokModelId?: string;
+  byokMaxMessageLength?: number;
+  byokMaxFindings?: number;
 }
 
 export function loadSettings(): DeanaSettings {

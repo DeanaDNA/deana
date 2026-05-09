@@ -5,16 +5,20 @@ import ReactMarkdown from "react-markdown";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
-import type { ExplorerFilters } from "../../lib/explorer";
 import {
   buildChatContext,
   CHAT_CONSENT_VERSION,
   CHAT_SEARCH_TOOL_NAME,
   CHAT_SEARCH_TOOL_PART_TYPE,
+  coerceChatSearchPlan,
+  DEFAULT_BYOK_MODEL_ID,
   extractChatFollowUps,
+  findingToChatContext,
   formatChatTitle,
-  MAX_BYOK_CONTEXT_FINDINGS,
+  MAX_CHAT_CONTEXT_FINDINGS,
   mergeChatFindings,
+  normalizeByokMaxFindings,
+  normalizeByokMaxMessageLength,
   normalizeChatFollowUps,
   type ChatContextFinding,
   type ChatFollowUpSuggestion,
@@ -35,15 +39,24 @@ import {
   saveChatThread,
 } from "../../lib/storage";
 import { loadMarkerSummary } from "../../lib/ai/searchIndex";
-import type { ChatRetrievalTrace, ChatSearchPlan, ExplorerTab, ProfileMeta, StoredChatMessage, StoredChatThread, StoredMarkerSummary, StoredReportEntry } from "../../types";
+import type {
+  ChatRetrievalTrace,
+  ChatSearchPlan,
+  ProfileMeta,
+  StoredChatContextStats,
+  StoredChatMessage,
+  StoredChatReasoningBlock,
+  StoredChatThread,
+  StoredChatToolEvent,
+  StoredMarkerSummary,
+  StoredReportEntry,
+} from "../../types";
 import { modelDisplayName } from "../../lib/ai/models";
 import { FindingInspector, MarkerInspector } from "./explorer";
 import { Icon } from "./ui";
 
 interface ExplorerAiChatProps {
   profile: ProfileMeta;
-  currentTab: ExplorerTab;
-  filters: ExplorerFilters;
   visibleEntries: StoredReportEntry[];
   selectedEntry: StoredReportEntry | null;
   pendingPrompt?: string | null;
@@ -51,9 +64,12 @@ interface ExplorerAiChatProps {
   selectedModel?: string;
   showReasoning?: boolean;
   byokEnabled?: boolean;
+  byokProviderId?: string;
   byokApiKey?: string;
   byokBaseUrl?: string;
   byokModelId?: string;
+  byokMaxMessageLength?: number;
+  byokMaxFindings?: number;
   onOpenSettings?: () => void;
 }
 
@@ -137,10 +153,10 @@ function displayMessageText(message: UIMessage): string {
   return parseChatMessage(message).content;
 }
 
-function isSettledSearchToolPart(part: UIMessage["parts"][number]): boolean {
+function isSuccessfulSearchToolPart(part: UIMessage["parts"][number]): boolean {
   return part.type === CHAT_SEARCH_TOOL_PART_TYPE
     && "state" in part
-    && (part.state === "output-available" || part.state === "output-error");
+    && part.state === "output-available";
 }
 
 function shouldKeepLatestToolResult(
@@ -148,22 +164,22 @@ function shouldKeepLatestToolResult(
   index: number,
   messages: UIMessage[],
   text: string,
-  settledSearchToolParts: UIMessage["parts"],
+  successfulSearchToolParts: UIMessage["parts"],
 ): boolean {
   return index === messages.length - 1
     && message.role === "assistant"
     && !text
-    && settledSearchToolParts.length > 0;
+    && successfulSearchToolParts.length > 0;
 }
 
 export function compactChatMessagesForRequest(messages: UIMessage[]): UIMessage[] {
   return messages
     .map((message, index) => {
       const text = displayMessageText(message).trim();
-      const settledSearchToolParts = message.parts.filter(isSettledSearchToolPart);
+      const successfulSearchToolParts = message.parts.filter(isSuccessfulSearchToolPart);
       const parts: UIMessage["parts"] = text ? [{ type: "text" as const, text }] : [];
-      if (shouldKeepLatestToolResult(message, index, messages, text, settledSearchToolParts)) {
-        parts.push(...settledSearchToolParts);
+      if (shouldKeepLatestToolResult(message, index, messages, text, successfulSearchToolParts)) {
+        parts.push(...successfulSearchToolParts);
       }
 
       return {
@@ -175,14 +191,48 @@ export function compactChatMessagesForRequest(messages: UIMessage[]): UIMessage[
     .filter((message) => message.role === "user" || message.parts.length > 0);
 }
 
-function messageReasoning(message: UIMessage): string | null {
-  const text = message.parts
+function latestUserMessageText(messages: UIMessage[]): string {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index].role === "user") return messageText(messages[index]);
+  }
+  return "";
+}
+
+export function shouldAutoContinueAfterSearchTool({ messages }: { messages: UIMessage[] }): boolean {
+  if (!lastAssistantMessageIsCompleteWithToolCalls({ messages })) return false;
+  const message = messages[messages.length - 1];
+  if (!message || message.role !== "assistant") return false;
+  const lastStepStartIndex = message.parts.reduce((lastIndex, part, index) => part.type === "step-start" ? index : lastIndex, -1);
+  const searchParts = message.parts.slice(lastStepStartIndex + 1).filter((part) => part.type === CHAT_SEARCH_TOOL_PART_TYPE);
+  return searchParts.length > 0 && searchParts.every(isSuccessfulSearchToolPart);
+}
+
+export function messageReasoningBlocks(message: UIMessage, createdAt: string): StoredChatReasoningBlock[] {
+  return message.parts
+    .filter((part) => part.type === "reasoning")
+    .map((part) => "text" in part ? part.text : "")
+    .map((text, index) => ({
+      id: `${message.id}-reasoning-${index}`,
+      text: text.trim(),
+      createdAt,
+    }))
+    .filter((block) => block.text);
+}
+
+function messageReasoningText(message: UIMessage): string {
+  return message.parts
     .filter((part) => part.type === "reasoning")
     .map((part) => "text" in part ? part.text : "")
     .join("")
     .trim();
+}
 
-  return text || null;
+function reasoningText(blocks: StoredChatReasoningBlock[] | undefined): string {
+  return (blocks ?? []).map((block) => block.text).join("").trim();
+}
+
+function uniqueIds(values: string[]): string[] {
+  return Array.from(new Set(values.filter(Boolean)));
 }
 
 function messageModel(message: UIMessage): string | null {
@@ -201,12 +251,30 @@ function toUiMessages(messages: StoredChatMessage[]): UIMessage[] {
   }));
 }
 
+export interface ThreadTitleRequestOptions {
+  byokEnabled?: boolean;
+  byokApiKey?: string;
+  byokBaseUrl?: string;
+  byokModelId?: string;
+}
 
-async function generateThreadTitle(prompt: string): Promise<string | null> {
+export function threadTitleRequestBody(prompt: string, options: ThreadTitleRequestOptions = {}): Record<string, string> {
+  const byokApiKey = options.byokEnabled ? options.byokApiKey?.trim() : "";
+  if (!byokApiKey) return { prompt };
+
+  return {
+    prompt,
+    byokApiKey,
+    ...(options.byokBaseUrl?.trim() ? { byokBaseUrl: options.byokBaseUrl.trim() } : {}),
+    ...(options.byokModelId?.trim() ? { byokModelId: options.byokModelId.trim() } : {}),
+  };
+}
+
+async function generateThreadTitle(prompt: string, options: ThreadTitleRequestOptions = {}): Promise<string | null> {
   const response = await fetch("/api/chat-title", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(threadTitleRequestBody(prompt, options)),
   });
 
   if (!response.ok) return null;
@@ -349,13 +417,102 @@ function buildEntryTitleById({
   return titles;
 }
 
-function restoredContextFindings(messages: StoredChatMessage[]): ChatContextFinding[] {
+function isByokConfigured(props: ExplorerAiChatProps): boolean {
+  return Boolean(props.byokEnabled && props.byokApiKey);
+}
+
+function byokMaxFindingsForProps(props: ExplorerAiChatProps): number | undefined {
+  return isByokConfigured(props) ? normalizeByokMaxFindings(props.byokMaxFindings) : undefined;
+}
+
+function contextFindingIdsFromMessage(message: StoredChatMessage): string[] {
+  return uniqueIds(message.contextFindingIds ?? message.contextFindings?.map((finding) => finding.id) ?? []);
+}
+
+async function rehydrateMessageContextFindings(
+  profileId: string,
+  messages: StoredChatMessage[],
+  maxFindings?: number,
+): Promise<Record<string, ChatContextFinding[]>> {
+  const idsByMessage = new Map(messages.map((message) => [message.id, contextFindingIdsFromMessage(message)]));
+  const allIds = uniqueIds(Array.from(idsByMessage.values()).flat());
+  const entriesById = new Map<string, ChatContextFinding>();
+
+  if (allIds.length > 0) {
+    try {
+      const entries = await loadReportEntriesByIds(profileId, allIds);
+      entries.forEach((entry) => entriesById.set(entry.id, findingToChatContext(entry)));
+    } catch {
+      // Legacy snapshots below keep old threads usable if local rehydration fails.
+    }
+  }
+
+  return Object.fromEntries(messages.flatMap((message) => {
+    const legacyById = new Map((message.contextFindings ?? []).map((finding) => [finding.id, finding]));
+    const findings = mergeChatFindings(
+      (idsByMessage.get(message.id) ?? [])
+        .map((id) => entriesById.get(id) ?? legacyById.get(id))
+        .filter((finding): finding is ChatContextFinding => Boolean(finding)),
+      maxFindings,
+    );
+    return findings.length > 0 ? [[message.id, findings]] : [];
+  }));
+}
+
+function restoredContextFindings(messages: StoredChatMessage[], contextByMessage: Record<string, ChatContextFinding[]>, maxFindings?: number): ChatContextFinding[] {
   return mergeChatFindings(
     messages
       .slice()
       .reverse()
-      .flatMap((message) => message.contextFindings ?? []),
+      .flatMap((message) => contextByMessage[message.id] ?? message.contextFindings ?? []),
+    maxFindings,
   );
+}
+
+function toolEventFromRetrieval(retrieval: ChatRetrievalResult): StoredChatToolEvent {
+  return {
+    id: makeId("tool-event"),
+    toolName: CHAT_SEARCH_TOOL_NAME,
+    createdAt: retrieval.trace.searchedAt,
+    status: retrieval.resultCount === 0 ? "empty" : "success",
+    searchPlan: retrieval.trace.searchPlan ?? retrieval.plan,
+    returnedFindingIds: retrieval.findings.map((finding) => finding.id),
+    cursor: retrieval.trace.retrievalCursor,
+    resultCount: retrieval.resultCount,
+    candidateWindowCount: retrieval.trace.candidateWindowCount,
+    remainingCandidateCount: retrieval.trace.remainingCandidateCount,
+    rationale: retrieval.trace.rationale,
+  };
+}
+
+function toolEventFromError(plan: ChatSearchPlan, message: string): StoredChatToolEvent {
+  return {
+    id: makeId("tool-event"),
+    toolName: CHAT_SEARCH_TOOL_NAME,
+    createdAt: new Date().toISOString(),
+    status: "error",
+    searchPlan: plan,
+    returnedFindingIds: [],
+    resultCount: 0,
+    errorText: message,
+  };
+}
+
+function contextStatsForRequest(context: ChatReportContext, props: ExplorerAiChatProps, maxFindings?: number): StoredChatContextStats {
+  const byok = isByokConfigured(props);
+  return {
+    findingCount: context.findings.length,
+    contextBytes: JSON.stringify(context).length,
+    maxFindings: maxFindings ?? MAX_CHAT_CONTEXT_FINDINGS,
+    ...(byok ? { maxMessageLength: normalizeByokMaxMessageLength(props.byokMaxMessageLength) } : {}),
+    byok,
+  };
+}
+
+function storedReasoningBlocks(message: StoredChatMessage): StoredChatReasoningBlock[] {
+  if (message.reasoningBlocks?.length) return message.reasoningBlocks;
+  const summary = message.reasoningSummary?.trim();
+  return summary ? [{ id: `${message.id}-reasoning-legacy`, text: summary, createdAt: message.createdAt }] : [];
 }
 
 export function searchMoreFollowUpFromTrace(trace: ChatRetrievalTrace | undefined): ChatFollowUpSuggestion | null {
@@ -412,11 +569,16 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
   const latestFindingsRef = useRef<ChatReportContext["findings"]>([]);
   const traceByMessageRef = useRef<Record<string, ChatRetrievalTrace>>({});
   const contextFindingsByMessageRef = useRef<Record<string, ChatContextFinding[]>>({});
+  const contextFindingIdsByMessageRef = useRef<Record<string, string[]>>({});
+  const contextStatsByMessageRef = useRef<Record<string, StoredChatContextStats>>({});
   const createdAtByMessageRef = useRef<Record<string, string>>({});
-  const reasoningByMessageRef = useRef<Record<string, string>>({});
+  const reasoningBlocksByMessageRef = useRef<Record<string, StoredChatReasoningBlock[]>>({});
+  const toolEventsByMessageRef = useRef<Record<string, StoredChatToolEvent[]>>({});
   const followUpsByMessageRef = useRef<Record<string, ChatFollowUpSuggestion[]>>({});
   const pendingTraceRef = useRef<ChatRetrievalTrace | null>(null);
   const pendingFindingsRef = useRef<ChatContextFinding[] | null>(null);
+  const pendingToolEventsRef = useRef<StoredChatToolEvent[]>([]);
+  const pendingContextStatsRef = useRef<StoredChatContextStats | null>(null);
   const activeThreadRef = useRef<StoredChatThread | null>(null);
   const isActiveThreadSavedRef = useRef(false);
   const pendingSendRef = useRef<string | null>(null);
@@ -499,7 +661,16 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
 
   async function selectThread(thread: StoredChatThread, closeList = true) {
     const storedMessages = await loadChatMessages(thread.id);
-    const linkedEntryIds = linkedEntryIdsFromTextValues(storedMessages.map((message) => message.content));
+    const storedContextByMessage = await rehydrateMessageContextFindings(
+      latestPropsRef.current.profile.id,
+      storedMessages,
+      byokMaxFindingsForProps(latestPropsRef.current),
+    );
+    const linkedEntryIds = uniqueIds([
+      ...linkedEntryIdsFromTextValues(storedMessages.map((message) => message.content)),
+      ...storedMessages.flatMap(contextFindingIdsFromMessage),
+      ...storedMessages.flatMap((message) => message.toolEvents?.flatMap((event) => event.returnedFindingIds) ?? []),
+    ]);
     if (linkedEntryIds.length > 0) {
       try {
         const entries = await loadReportEntriesByIds(latestPropsRef.current.profile.id, linkedEntryIds);
@@ -515,23 +686,40 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
     );
     contextFindingsByMessageRef.current = Object.fromEntries(
       storedMessages
-        .filter((message) => message.contextFindings?.length)
-        .map((message) => [message.id, message.contextFindings as ChatContextFinding[]]),
+        .filter((message) => storedContextByMessage[message.id]?.length)
+        .map((message) => [message.id, storedContextByMessage[message.id]]),
+    );
+    contextFindingIdsByMessageRef.current = Object.fromEntries(
+      storedMessages
+        .map((message) => [message.id, contextFindingIdsFromMessage(message)])
+        .filter(([, ids]) => ids.length > 0),
+    );
+    contextStatsByMessageRef.current = Object.fromEntries(
+      storedMessages
+        .filter((message) => message.contextStats)
+        .map((message) => [message.id, message.contextStats as StoredChatContextStats]),
     );
     createdAtByMessageRef.current = Object.fromEntries(storedMessages.map((message) => [message.id, message.createdAt]));
-    reasoningByMessageRef.current = Object.fromEntries(
+    reasoningBlocksByMessageRef.current = Object.fromEntries(
       storedMessages
-        .filter((message) => message.reasoningSummary)
-        .map((message) => [message.id, message.reasoningSummary as string]),
+        .map((message) => [message.id, storedReasoningBlocks(message)])
+        .filter(([, blocks]) => blocks.length > 0),
+    );
+    toolEventsByMessageRef.current = Object.fromEntries(
+      storedMessages
+        .filter((message) => message.toolEvents?.length)
+        .map((message) => [message.id, message.toolEvents as StoredChatToolEvent[]]),
     );
     followUpsByMessageRef.current = Object.fromEntries(
       storedMessages
         .filter((message) => message.followUps?.length)
         .map((message) => [message.id, normalizeChatFollowUps(message.followUps)]),
     );
-    latestFindingsRef.current = restoredContextFindings(storedMessages);
+    latestFindingsRef.current = restoredContextFindings(storedMessages, storedContextByMessage, byokMaxFindingsForProps(latestPropsRef.current));
     pendingTraceRef.current = null;
     pendingFindingsRef.current = null;
+    pendingToolEventsRef.current = [];
+    pendingContextStatsRef.current = null;
     setIsLoadingMoreFindings(false);
     activeThreadRef.current = thread;
     isActiveThreadSavedRef.current = true;
@@ -584,12 +772,17 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
     isActiveThreadSavedRef.current = false;
     traceByMessageRef.current = {};
     contextFindingsByMessageRef.current = {};
+    contextFindingIdsByMessageRef.current = {};
+    contextStatsByMessageRef.current = {};
     createdAtByMessageRef.current = {};
-    reasoningByMessageRef.current = {};
+    reasoningBlocksByMessageRef.current = {};
+    toolEventsByMessageRef.current = {};
     followUpsByMessageRef.current = {};
     latestFindingsRef.current = [];
     pendingTraceRef.current = null;
     pendingFindingsRef.current = null;
+    pendingToolEventsRef.current = [];
+    pendingContextStatsRef.current = null;
     setIsLoadingMoreFindings(false);
     setInitialMessages([]);
     setMessagesRef.current?.([]);
@@ -609,13 +802,18 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
       ...thread,
       title: formatChatTitle(prompt) || "New chat",
       updatedAt: now,
-      modelId: p.byokEnabled && p.byokApiKey ? (p.byokModelId || "gpt-4o-mini") : p.selectedModel,
+      modelId: p.byokEnabled && p.byokApiKey ? (p.byokModelId || DEFAULT_BYOK_MODEL_ID) : p.selectedModel,
     };
     activeThreadRef.current = fallbackThread;
     setActiveThread(fallbackThread);
 
     void (async () => {
-      const generatedTitlePromise = generateThreadTitle(prompt).catch(() => null);
+      const generatedTitlePromise = generateThreadTitle(prompt, {
+        byokEnabled: p.byokEnabled,
+        byokApiKey: p.byokApiKey,
+        byokBaseUrl: p.byokBaseUrl,
+        byokModelId: p.byokModelId,
+      }).catch(() => null);
 
       try {
         await saveChatThread(fallbackThread);
@@ -673,56 +871,92 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
     const assistantText = assistantParsed?.content.trim() ?? "";
     const assistantTrace = assistantMessage && assistantText && pendingTraceRef.current ? pendingTraceRef.current : null;
     const assistantFindings = assistantMessage && assistantText && pendingFindingsRef.current ? pendingFindingsRef.current : null;
-    const assistantReasoning = assistantMessage ? messageReasoning(assistantMessage) : null;
+    const assistantContextStats = assistantMessage && assistantText && pendingContextStatsRef.current ? pendingContextStatsRef.current : null;
+    const assistantToolEvents = assistantMessage && assistantText && pendingToolEventsRef.current.length > 0 ? pendingToolEventsRef.current : null;
     const assistantFollowUps = assistantParsed ? normalizeChatFollowUps(assistantParsed.followUps) : [];
 
-    return messages
-      .filter((message) => {
-        if (message.role === "user") return true;
-        if (message.role !== "assistant") return false;
-        return Boolean(parseChatMessage(message).content.trim() || messageReasoning(message) || traceByMessageRef.current[message.id] || contextFindingsByMessageRef.current[message.id]?.length);
-      })
-      .map((message) => {
-        const parsedMessage = parseChatMessage(message);
-        const content = parsedMessage.content;
-        const existingCreatedAt = createdAtByMessageRef.current[message.id];
-        const createdAt = existingCreatedAt ?? new Date(nextCreatedAtTime++).toISOString();
-        createdAtByMessageRef.current[message.id] = createdAt;
-        const trace = message.id === assistantMessage?.id && assistantTrace ? assistantTrace : traceByMessageRef.current[message.id];
-        const contextFindings = message.id === assistantMessage?.id && assistantFindings ? assistantFindings : contextFindingsByMessageRef.current[message.id];
-        const followUps = message.id === assistantMessage?.id && assistantFollowUps.length > 0
-          ? assistantFollowUps
-          : followUpsByMessageRef.current[message.id];
-        if (trace) traceByMessageRef.current[message.id] = trace;
-        if (contextFindings?.length) contextFindingsByMessageRef.current[message.id] = contextFindings;
-        if (message.id === assistantMessage?.id && assistantReasoning) reasoningByMessageRef.current[message.id] = assistantReasoning;
-        if (followUps?.length) followUpsByMessageRef.current[message.id] = followUps;
+    const storedMessages: StoredChatMessage[] = [];
+    for (const message of messages) {
+      if (message.role !== "user" && message.role !== "assistant") continue;
 
-        return {
-          id: message.id,
-          threadId: activeThreadRef.current?.id ?? "",
-          profileId: props.profile.id,
-          role: message.role as "user" | "assistant",
-          content,
-          createdAt,
-          trace,
-          contextFindings,
-          reasoningSummary: message.id === assistantMessage?.id ? assistantReasoning : null,
-          followUps,
-          modelId: message.role === "assistant" ? (messageModel(message) ?? undefined) : undefined,
-        };
+      const parsedMessage = parseChatMessage(message);
+      const content = parsedMessage.content;
+      const shouldStore = message.role === "user" || Boolean(
+        content.trim()
+        || messageReasoningText(message)
+        || reasoningBlocksByMessageRef.current[message.id]?.length
+        || traceByMessageRef.current[message.id]
+        || contextFindingsByMessageRef.current[message.id]?.length
+        || contextFindingIdsByMessageRef.current[message.id]?.length
+        || toolEventsByMessageRef.current[message.id]?.length,
+      );
+      if (!shouldStore) continue;
+
+      const existingCreatedAt = createdAtByMessageRef.current[message.id];
+      const createdAt = existingCreatedAt ?? new Date(nextCreatedAtTime++).toISOString();
+      createdAtByMessageRef.current[message.id] = createdAt;
+      const trace = message.id === assistantMessage?.id && assistantTrace ? assistantTrace : traceByMessageRef.current[message.id];
+      const contextFindings = message.id === assistantMessage?.id && assistantFindings ? assistantFindings : contextFindingsByMessageRef.current[message.id];
+      const contextFindingIds = uniqueIds(contextFindings?.map((finding) => finding.id) ?? contextFindingIdsByMessageRef.current[message.id] ?? []);
+      const contextStats = message.id === assistantMessage?.id && assistantContextStats
+        ? assistantContextStats
+        : contextStatsByMessageRef.current[message.id];
+      const reasoningBlocks = message.id === assistantMessage?.id
+        ? messageReasoningBlocks(message, createdAt)
+        : reasoningBlocksByMessageRef.current[message.id];
+      const toolEvents = message.id === assistantMessage?.id && assistantToolEvents
+        ? assistantToolEvents
+        : toolEventsByMessageRef.current[message.id];
+      const followUps = message.id === assistantMessage?.id && assistantFollowUps.length > 0
+        ? assistantFollowUps
+        : followUpsByMessageRef.current[message.id];
+      if (trace) traceByMessageRef.current[message.id] = trace;
+      if (contextFindings?.length) contextFindingsByMessageRef.current[message.id] = contextFindings;
+      if (contextFindingIds.length) contextFindingIdsByMessageRef.current[message.id] = contextFindingIds;
+      if (contextStats) contextStatsByMessageRef.current[message.id] = contextStats;
+      if (reasoningBlocks?.length) reasoningBlocksByMessageRef.current[message.id] = reasoningBlocks;
+      if (toolEvents?.length) toolEventsByMessageRef.current[message.id] = toolEvents;
+      if (followUps?.length) followUpsByMessageRef.current[message.id] = followUps;
+
+      storedMessages.push({
+        id: message.id,
+        threadId: activeThreadRef.current?.id ?? "",
+        profileId: props.profile.id,
+        role: message.role,
+        content,
+        createdAt,
+        trace,
+        contextFindingIds: contextFindingIds.length > 0 ? contextFindingIds : undefined,
+        contextStats,
+        toolEvents,
+        reasoningSummary: reasoningBlocks?.length ? reasoningText(reasoningBlocks) : null,
+        reasoningBlocks,
+        followUps,
+        modelId: message.role === "assistant" ? (messageModel(message) ?? undefined) : undefined,
       });
+    }
+    return storedMessages;
   }
 
   const transport = useMemo(() => new DefaultChatTransport({
     api: "/api/chat",
     prepareSendMessagesRequest: async ({ api, messages, body }) => {
       const props = latestPropsRef.current;
-      const byok = props.byokEnabled && props.byokApiKey
+      const byokMaxFindings = byokMaxFindingsForProps(props);
+      const context = buildChatContext({
+        ...props,
+        retrievedFindings: latestFindingsRef.current,
+        ...(byokMaxFindings ? { maxFindings: byokMaxFindings } : {}),
+      });
+      pendingContextStatsRef.current = contextStatsForRequest(context, props, byokMaxFindings);
+      const byok = isByokConfigured(props)
         ? {
+            ...(props.byokProviderId ? { byokProviderId: props.byokProviderId } : {}),
             byokApiKey: props.byokApiKey,
             ...(props.byokBaseUrl ? { byokBaseUrl: props.byokBaseUrl } : {}),
             ...(props.byokModelId ? { byokModelId: props.byokModelId } : {}),
+            byokMaxMessageLength: normalizeByokMaxMessageLength(props.byokMaxMessageLength),
+            byokMaxFindings: normalizeByokMaxFindings(props.byokMaxFindings),
           }
         : {};
       return {
@@ -733,11 +967,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
             accepted: true,
             version: CHAT_CONSENT_VERSION,
           },
-          context: buildChatContext({
-            ...props,
-            retrievedFindings: latestFindingsRef.current,
-            ...(props.byokEnabled && props.byokApiKey ? { maxFindings: MAX_BYOK_CONTEXT_FINDINGS } : {}),
-          }),
+          context,
           messages: compactChatMessagesForRequest(messages),
           model: props.selectedModel,
           ...byok,
@@ -759,18 +989,19 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
     id: activeThread?.id,
     messages: initialMessages,
     transport,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    sendAutomaticallyWhen: shouldAutoContinueAfterSearchTool,
     onToolCall: async ({ toolCall }) => {
       if (toolCall.dynamic || toolCall.toolName !== CHAT_SEARCH_TOOL_NAME) return;
 
       setSearchStatus({ status: "searching" });
 
+      const plan = coerceChatSearchPlan(toolCall.input, latestUserMessageText(messages));
       try {
-        const plan = toolCall.input as ChatSearchPlan;
         const retrieval = await searchReportEntriesForChat({
           profileId: latestPropsRef.current.profile.id,
           prompt: plan.query,
           plan,
+          limit: byokMaxFindingsForProps(latestPropsRef.current),
         });
         applyChatRetrieval(retrieval);
         void addToolOutput({
@@ -785,6 +1016,10 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "AI report search is unavailable right now.";
+        pendingToolEventsRef.current = [
+          ...pendingToolEventsRef.current,
+          toolEventFromError(plan, message),
+        ];
         setSearchStatus({ status: "error", message });
         void addToolOutput({
           tool: CHAT_SEARCH_TOOL_NAME,
@@ -803,13 +1038,15 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
       const nextThread = {
         ...thread,
         updatedAt: now,
-        modelId: p.byokEnabled && p.byokApiKey ? (p.byokModelId || "gpt-4o-mini") : p.selectedModel,
+        modelId: p.byokEnabled && p.byokApiKey ? (p.byokModelId || DEFAULT_BYOK_MODEL_ID) : p.selectedModel,
       };
       await saveChatThread(nextThread);
       isActiveThreadSavedRef.current = true;
       await saveChatMessages(thread.id, storedMessagesFromUi(finishedMessages, message));
       pendingTraceRef.current = null;
       pendingFindingsRef.current = null;
+      pendingToolEventsRef.current = [];
+      pendingContextStatsRef.current = null;
       setActiveThread(nextThread);
       await refreshThreads(thread.id);
     },
@@ -826,7 +1063,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
   const messageScrollSignal = useMemo(() => messages
     .map((message) => {
       const text = messageText(message);
-      const reasoning = messageReasoning(message) ?? "";
+      const reasoning = messageReasoningText(message) || reasoningText(reasoningBlocksByMessageRef.current[message.id]);
       return `${message.id}:${message.role}:${text.length}:${reasoning.length}`;
     })
     .join("|"), [messages]);
@@ -856,14 +1093,17 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
   }, [messageScrollSignal, status, searchStatus.status, error?.message]);
 
   function applyChatRetrieval(retrieval: ChatRetrievalResult) {
-    const p = latestPropsRef.current;
-    const maxFindings = p.byokEnabled && p.byokApiKey ? MAX_BYOK_CONTEXT_FINDINGS : undefined;
+    const maxFindings = byokMaxFindingsForProps(latestPropsRef.current);
     latestFindingsRef.current = mergeChatFindings([
       ...retrieval.findings,
       ...latestFindingsRef.current,
     ], maxFindings);
     pendingTraceRef.current = retrieval.trace;
     pendingFindingsRef.current = latestFindingsRef.current;
+    pendingToolEventsRef.current = [
+      ...pendingToolEventsRef.current,
+      toolEventFromRetrieval(retrieval),
+    ];
     setSearchStatus({ status: "ready", trace: retrieval.trace });
   }
 
@@ -880,11 +1120,16 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
         profileId: latestPropsRef.current.profile.id,
         prompt: plan.query,
         plan,
+        limit: byokMaxFindingsForProps(latestPropsRef.current),
         excludeIds: cursor.sentFindingIds,
         offset: cursor.nextOffset,
       });
 
       if (retrieval.findings.length === 0) {
+        pendingToolEventsRef.current = [
+          ...pendingToolEventsRef.current,
+          toolEventFromRetrieval(retrieval),
+        ];
         setSearchStatus({ status: "error", message: "No additional local findings matched that search." });
         return;
       }
@@ -1220,7 +1465,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
                     <Icon name="settings" size={14} />
                     <span>Using {modelDisplayName(
                       props.byokEnabled && props.byokApiKey
-                        ? (props.byokModelId || "gpt-4o-mini")
+                        ? (props.byokModelId || DEFAULT_BYOK_MODEL_ID)
                         : (props.selectedModel ?? "")
                     )}</span>
                     {props.onOpenSettings ? (
@@ -1234,23 +1479,25 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
                   </button>
                 </div>
               ) : null}
-              {messages.map((message, index) => (
-                <ChatMessage
-                  key={message.id}
-                  role={message.role}
-                  content={displayTextForMessage(message)}
-                  modelName={messageModel(message)}
-                  trace={traceByMessageRef.current[message.id]}
-                  interpretedFindingCount={contextFindingsByMessageRef.current[message.id]?.length}
-                  reasoningSummary={messageReasoning(message) ?? reasoningByMessageRef.current[message.id] ?? null}
-                  showReasoning={props.showReasoning !== false}
-                  isStreamingReasoning={isBusy && index === messages.length - 1}
-                  entryTitleById={entryTitleById}
-                  components={markdownComponents}
-                  onOpenEntry={handleOpenEntry}
-                  onOpenFindings={openFindingsPanel}
-                />
-              ))}
+              {messages.map((message, index) => {
+                const liveReasoningBlocks = messageReasoningBlocks(message, createdAtByMessageRef.current[message.id] ?? new Date().toISOString());
+                return (
+                  <ChatMessage
+                    key={message.id}
+                    role={message.role}
+                    content={displayTextForMessage(message)}
+                    modelName={messageModel(message)}
+                    trace={traceByMessageRef.current[message.id]}
+                    interpretedFindingCount={contextFindingIdsByMessageRef.current[message.id]?.length ?? contextFindingsByMessageRef.current[message.id]?.length}
+                    reasoningBlocks={liveReasoningBlocks.length > 0 ? liveReasoningBlocks : reasoningBlocksByMessageRef.current[message.id] ?? []}
+                    showReasoning={props.showReasoning !== false}
+                    isStreamingReasoning={isBusy && index === messages.length - 1}
+                    components={markdownComponents}
+                    onOpenEntry={handleOpenEntry}
+                    onOpenFindings={openFindingsPanel}
+                  />
+                );
+              })}
               {isBusy ? <GeneratingStatus status={searchStatus} /> : null}
               {error ? (
                 <div className="dn-ai-error" role="alert">
@@ -1726,6 +1973,11 @@ function ChatSidePanel({
 
 const remarkPlugins = [remarkGfm] as Parameters<typeof ReactMarkdown>[0]["remarkPlugins"] & object;
 const rehypePlugins = [[rehypeSanitize, markdownSchema]] as Parameters<typeof ReactMarkdown>[0]["rehypePlugins"] & object;
+const reasoningMarkdownComponents: Components = {
+  a({ children }) {
+    return <>{children}</>;
+  },
+};
 
 const ChatMessage = memo(function ChatMessage({
   role,
@@ -1733,10 +1985,9 @@ const ChatMessage = memo(function ChatMessage({
   modelName,
   trace,
   interpretedFindingCount,
-  reasoningSummary,
+  reasoningBlocks,
   showReasoning,
   isStreamingReasoning,
-  entryTitleById,
   components,
   onOpenEntry,
   onOpenFindings,
@@ -1746,23 +1997,21 @@ const ChatMessage = memo(function ChatMessage({
   modelName: string | null;
   trace?: ChatRetrievalTrace;
   interpretedFindingCount?: number;
-  reasoningSummary: string | null;
+  reasoningBlocks: StoredChatReasoningBlock[];
   showReasoning: boolean;
   isStreamingReasoning: boolean;
-  entryTitleById: Map<string, string>;
   components: Components;
   onOpenEntry: (entryId: string) => void;
   onOpenFindings: () => void;
 }) {
-  void entryTitleById;
-  const hasReasoning = Boolean(reasoningSummary?.trim());
+  const hasReasoning = reasoningBlocks.some((block) => block.text.trim());
 
   if (!content && !hasReasoning) return null;
 
   return (
     <article className={`dn-ai-message dn-ai-message--${role}`}>
       {role === "assistant" && modelName ? <p className="dn-ai-model-name">{modelDisplayName(modelName)}</p> : null}
-      {hasReasoning && role === "assistant" && showReasoning ? <ModelReasoning reasoning={reasoningSummary ?? ""} isStreaming={isStreamingReasoning} /> : null}
+      {hasReasoning && role === "assistant" && showReasoning ? <ModelReasoning blocks={reasoningBlocks} isStreaming={isStreamingReasoning} /> : null}
       {content ? (
         <ReactMarkdown
           remarkPlugins={remarkPlugins}
@@ -1780,23 +2029,54 @@ const ChatMessage = memo(function ChatMessage({
   );
 });
 
-function ModelReasoning({ reasoning, isStreaming }: { reasoning: string; isStreaming: boolean }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+function ModelReasoning({ blocks, isStreaming }: { blocks: StoredChatReasoningBlock[]; isStreaming: boolean }) {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+  const visibleBlocks = blocks.filter((block) => block.text.trim());
+  const hasMultipleBlocks = visibleBlocks.length > 1;
 
   return (
-    <div className={`dn-ai-trace dn-ai-trace--reasoning${isExpanded ? " is-expanded" : ""}`}>
+    <div className="dn-ai-reasoning-list">
       <div className="dn-ai-trace--reasoning__head">
         <span className="dn-ai-trace--reasoning__label">
-          <Icon name="spark" /> {isStreaming ? "Thinking…" : "Thought Process"}
+          <Icon name="spark" /> {isStreaming ? "Thinking..." : "Thought Process"}
         </span>
-        <button type="button" className="dn-ai-reasoning-toggle" onClick={() => setIsExpanded((v) => !v)}>
-          {isExpanded ? "Hide" : "Show"}
-        </button>
       </div>
-      <div className="dn-ai-trace--reasoning__body">
-        <p>{reasoning}</p>
-        {!isExpanded ? <div className="dn-ai-trace--reasoning__fade" aria-hidden="true" /> : null}
-      </div>
+      {visibleBlocks.map((block, index) => {
+        const isExpanded = expandedIds.has(block.id);
+        return (
+          <div key={block.id} className={`dn-ai-trace dn-ai-trace--reasoning${isExpanded ? " is-expanded" : ""}`}>
+            <div className="dn-ai-trace--reasoning__head">
+              {hasMultipleBlocks ? <span className="dn-ai-reasoning-block-label">Step {index + 1}</span> : <span />}
+              <button
+                type="button"
+                className="dn-ai-reasoning-toggle"
+                onClick={() => setExpandedIds((current) => {
+                  const next = new Set(current);
+                  if (next.has(block.id)) {
+                    next.delete(block.id);
+                  } else {
+                    next.add(block.id);
+                  }
+                  return next;
+                })}
+              >
+                {isExpanded ? "Hide" : "Show"}
+              </button>
+            </div>
+            <div className="dn-ai-trace--reasoning__body">
+              <ReactMarkdown
+                remarkPlugins={remarkPlugins}
+                rehypePlugins={rehypePlugins}
+                components={reasoningMarkdownComponents}
+                urlTransform={(url) => url}
+              >
+                {block.text}
+              </ReactMarkdown>
+              {!isExpanded ? <div className="dn-ai-trace--reasoning__fade" aria-hidden="true" /> : null}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

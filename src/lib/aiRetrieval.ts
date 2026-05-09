@@ -1,5 +1,5 @@
 import { DEFAULT_FILTERS, matchesEntryFilters } from "./explorer";
-import { findingToChatContext, MAX_CHAT_CONTEXT_FINDINGS, type ChatContextFinding } from "./aiChat";
+import { findingToChatContext, MAX_BYOK_CONTEXT_FINDINGS_LIMIT, MAX_CHAT_CONTEXT_FINDINGS, type ChatContextFinding } from "./aiChat";
 import { searchWithFields, waitForIndex, type SearchCandidate, type SearchIndexStatus } from "./ai/searchIndex";
 import { rankingQualityMultiplier } from "./ai/ranking";
 import { loadCategoryPage, loadReportEntriesByIds } from "./storage";
@@ -283,7 +283,12 @@ function isSupplementalContext(entry: StoredReportEntry): boolean {
 
 function resolveCandidateGuidedLimit(candidates: SearchCandidate[], rankedCount: number, explicitLimit?: number): number {
   const maxLimit = Math.min(MAX_CHAT_CONTEXT_FINDINGS, rankedCount);
-  if (explicitLimit !== undefined) return Math.min(explicitLimit, maxLimit);
+  if (explicitLimit !== undefined) {
+    const safeLimit = Number.isFinite(explicitLimit)
+      ? Math.max(0, Math.min(MAX_BYOK_CONTEXT_FINDINGS_LIMIT, Math.floor(explicitLimit)))
+      : 0;
+    return Math.min(safeLimit, rankedCount);
+  }
   if (maxLimit <= MIN_CHAT_SEARCH_FINDINGS) return maxLimit;
 
   const topScore = candidates[0]?.score ?? 0;
@@ -517,11 +522,9 @@ export async function searchReportEntriesForChat({
   const completedAt = performance.now();
   const selectedIds = selectedRankedEntries.map(({ entry }) => entry.id);
   const sentFindingIds = uniqueIds([...excludeIds, ...selectedIds]);
-  const candidateWindowCount = usedFallback ? fallbackEntryCount : candidates.length;
-  const remainingCandidateCount = usedFallback
-    ? Math.max(0, fallbackEntryCount - selectedFindings.length)
-    : Math.max(0, candidates.length - sentFindingIds.length);
-  const hasMore = remainingCandidateCount > 0 && selectedFindings.length > 0;
+  const candidateWindowCount = ranked.length;
+  const remainingCandidateCount = Math.max(0, ranked.length - selectedFindings.length);
+  const hasMore = remainingCandidateCount > 0;
   const timingMs = {
     total: Math.round(completedAt - startedAt),
     indexWait: Math.round(indexReadyAt - startedAt),

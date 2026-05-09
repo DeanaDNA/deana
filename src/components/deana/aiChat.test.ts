@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { UIMessage } from "ai";
 import type { ChatRetrievalTrace } from "../../types";
-import { compactChatMessagesForRequest, generatingStatusDetail, searchMoreFollowUpFromTrace, traceFindingSummary, type SearchStatus } from "./aiChat";
+import { compactChatMessagesForRequest, generatingStatusDetail, messageReasoningBlocks, searchMoreFollowUpFromTrace, shouldAutoContinueAfterSearchTool, threadTitleRequestBody, traceFindingSummary, type SearchStatus } from "./aiChat";
 
 const emptySearchTrace: ChatRetrievalTrace = {
   searchedAt: "2026-05-01T12:00:00.000Z",
@@ -42,6 +42,31 @@ describe("generatingStatusDetail", () => {
       status: "ready",
       trace: emptySearchTrace,
     })).toBe("No matching saved findings found...");
+  });
+});
+
+describe("threadTitleRequestBody", () => {
+  it("sends only the prompt when BYOK is not configured", () => {
+    expect(threadTitleRequestBody("Will I go bald?", {
+      byokEnabled: false,
+      byokApiKey: "sk-test",
+      byokBaseUrl: "https://openrouter.ai/api/v1",
+      byokModelId: "openai/gpt-4o-mini",
+    })).toEqual({ prompt: "Will I go bald?" });
+  });
+
+  it("includes trimmed BYOK fields when BYOK is configured", () => {
+    expect(threadTitleRequestBody("Will I go bald?", {
+      byokEnabled: true,
+      byokApiKey: " sk-test ",
+      byokBaseUrl: " https://openrouter.ai/api/v1 ",
+      byokModelId: " openai/gpt-4o-mini ",
+    })).toEqual({
+      prompt: "Will I go bald?",
+      byokApiKey: "sk-test",
+      byokBaseUrl: "https://openrouter.ai/api/v1",
+      byokModelId: "openai/gpt-4o-mini",
+    });
   });
 });
 
@@ -164,6 +189,92 @@ describe("compactChatMessagesForRequest", () => {
         role: "assistant",
         parts: [{ type: "text", text: "I found one matching saved finding." }],
       },
+    ]);
+  });
+
+  it("does not keep latest errored tool output for automatic continuation", () => {
+    expect(compactChatMessagesForRequest([
+      {
+        id: "user-1",
+        role: "user",
+        parts: [{ type: "text", text: "Anything about zymase tolerance?" }],
+      },
+      {
+        id: "assistant-tool-1",
+        role: "assistant",
+        parts: [{
+          type: "tool-searchReportFindings",
+          state: "output-error",
+          toolCallId: "tool-error",
+          input: {},
+          errorText: "AI report search is unavailable right now.",
+        }],
+      },
+    ])).toEqual([
+      {
+        id: "user-1",
+        role: "user",
+        parts: [{ type: "text", text: "Anything about zymase tolerance?" }],
+      },
+    ]);
+  });
+});
+
+describe("shouldAutoContinueAfterSearchTool", () => {
+  it("continues after successful browser search output", () => {
+    expect(shouldAutoContinueAfterSearchTool({
+      messages: [{
+        id: "assistant-tool-1",
+        role: "assistant",
+        parts: [
+          { type: "step-start" },
+          {
+            type: "tool-searchReportFindings",
+            state: "output-available",
+            toolCallId: "tool-1",
+            input: {},
+            output: { findings: [], resultCount: 0 },
+          },
+        ],
+      }],
+    })).toBe(true);
+  });
+
+  it("does not continue after search tool errors", () => {
+    expect(shouldAutoContinueAfterSearchTool({
+      messages: [{
+        id: "assistant-tool-1",
+        role: "assistant",
+        parts: [
+          { type: "step-start" },
+          {
+            type: "tool-searchReportFindings",
+            state: "output-error",
+            toolCallId: "tool-1",
+            input: {},
+            errorText: "AI report search is unavailable right now.",
+          },
+        ],
+      }],
+    })).toBe(false);
+  });
+});
+
+describe("messageReasoningBlocks", () => {
+  it("keeps separate reasoning parts as separate blocks", () => {
+    const blocks = messageReasoningBlocks({
+      id: "assistant-1",
+      role: "assistant",
+      parts: [
+        { type: "reasoning", text: "First thought. " },
+        { type: "text", text: "Visible answer." },
+        { type: "reasoning", text: "Second thought." },
+      ],
+    }, "2026-05-09T12:00:00.000Z");
+
+    expect(blocks).toEqual([
+      { id: "assistant-1-reasoning-0", text: "First thought.", createdAt: "2026-05-09T12:00:00.000Z" },
+      { id: "assistant-1-reasoning-1", text: "Second thought.", createdAt: "2026-05-09T12:00:00.000Z" },
     ]);
   });
 });
