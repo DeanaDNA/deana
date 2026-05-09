@@ -240,6 +240,70 @@ export function buildSystemPrompt(context: z.infer<typeof chatContextSchema>): s
 }
 
 
+// Rewrite OpenRouter/OpenAI-compatible SSE streams that carry reasoning in
+// delta.reasoning or delta.reasoning_content into <think>…</think> tags inside
+// delta.content so that extractReasoningMiddleware can extract them.
+function withReasoningInjection(base: typeof globalThis.fetch): typeof globalThis.fetch {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+
+  return async (input, init) => {
+    const response = await base(input, init);
+    if (!response.body || !response.headers.get("content-type")?.includes("text/event-stream")) {
+      return response;
+    }
+
+    let lineBuffer = "";
+    let insideReasoning = false;
+
+    const transformed = response.body.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        lineBuffer += decoder.decode(chunk, { stream: true });
+        const lines = lineBuffer.split("\n");
+        lineBuffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ") || line === "data: [DONE]") {
+            controller.enqueue(encoder.encode(line + "\n"));
+            continue;
+          }
+          try {
+            const data = JSON.parse(line.slice(6)) as Record<string, unknown>;
+            const choices = data.choices as Array<{ delta?: Record<string, unknown> }> | undefined;
+            const delta = choices?.[0]?.delta;
+            if (delta) {
+              const reasoning = (delta["reasoning_content"] ?? delta["reasoning"]) as string | null | undefined;
+              delete delta["reasoning"];
+              delete delta["reasoning_content"];
+              if (typeof reasoning === "string" && reasoning.length > 0) {
+                delta["content"] = insideReasoning
+                  ? reasoning
+                  : `<think>${reasoning}`;
+                insideReasoning = true;
+              } else if (insideReasoning) {
+                insideReasoning = false;
+                delta["content"] = `</think>${(delta["content"] as string | null | undefined) ?? ""}`;
+              }
+            }
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n`));
+          } catch {
+            controller.enqueue(encoder.encode(line + "\n"));
+          }
+        }
+      },
+      flush(controller) {
+        if (lineBuffer) controller.enqueue(encoder.encode(lineBuffer));
+      },
+    }));
+
+    return new Response(transformed, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+  };
+}
+
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== "POST") {
     return jsonResponse(405, "Method not allowed.");
@@ -306,6 +370,7 @@ export default async function handler(request: Request): Promise<Response> {
       const openaiProvider = createOpenAI({
         apiKey: byokApiKey,
         ...(byokBaseUrl ? { baseURL: byokBaseUrl } : {}),
+        fetch: withReasoningInjection(fetch),
       });
       const model = byokModelId || "gpt-4o-mini";
       const byokModel = wrapLanguageModel({

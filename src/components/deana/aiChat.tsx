@@ -856,10 +856,12 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
   }, [messageScrollSignal, status, searchStatus.status, error?.message]);
 
   function applyChatRetrieval(retrieval: ChatRetrievalResult) {
+    const p = latestPropsRef.current;
+    const maxFindings = p.byokEnabled && p.byokApiKey ? MAX_BYOK_CONTEXT_FINDINGS : undefined;
     latestFindingsRef.current = mergeChatFindings([
       ...retrieval.findings,
       ...latestFindingsRef.current,
-    ]);
+    ], maxFindings);
     pendingTraceRef.current = retrieval.trace;
     pendingFindingsRef.current = latestFindingsRef.current;
     setSearchStatus({ status: "ready", trace: retrieval.trace });
