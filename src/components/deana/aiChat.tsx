@@ -717,7 +717,11 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
     prepareSendMessagesRequest: async ({ api, messages, body }) => {
       const props = latestPropsRef.current;
       const byok = props.byokEnabled && props.byokApiKey
-        ? { byokApiKey: props.byokApiKey, byokBaseUrl: props.byokBaseUrl, byokModelId: props.byokModelId }
+        ? {
+            byokApiKey: props.byokApiKey,
+            ...(props.byokBaseUrl ? { byokBaseUrl: props.byokBaseUrl } : {}),
+            ...(props.byokModelId ? { byokModelId: props.byokModelId } : {}),
+          }
         : {};
       return {
         api,

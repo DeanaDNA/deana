@@ -262,10 +262,15 @@ export function ExplorerScreen({
     const s = loadSettings();
     return s.showReasoning !== false;
   });
-  const [byokEnabled, setByokEnabled] = useState<boolean>(() => loadSettings().byokEnabled ?? false);
-  const [byokApiKey, setByokApiKey] = useState<string>(() => loadSettings().byokApiKey ?? "");
-  const [byokBaseUrl, setByokBaseUrl] = useState<string>(() => loadSettings().byokBaseUrl ?? "");
-  const [byokModelId, setByokModelId] = useState<string>(() => loadSettings().byokModelId ?? "");
+  const [byok, setByok] = useState(() => {
+    const s = loadSettings();
+    return {
+      enabled: s.byokEnabled ?? false,
+      apiKey: s.byokApiKey ?? "",
+      baseUrl: s.byokBaseUrl ?? "",
+      modelId: s.byokModelId ?? "",
+    };
+  });
   const openSettings = useCallback(() => setIsSettingsOpen(true), []);
   const previousTabRef = useRef<ExplorerTab | null>(null);
 
@@ -411,10 +416,10 @@ export function ExplorerScreen({
           onPendingPromptConsumed={() => setPendingAiPrompt(null)}
           selectedModel={selectedModel}
           showReasoning={showReasoning}
-          byokEnabled={byokEnabled}
-          byokApiKey={byokApiKey}
-          byokBaseUrl={byokBaseUrl}
-          byokModelId={byokModelId}
+          byokEnabled={byok.enabled}
+          byokApiKey={byok.apiKey}
+          byokBaseUrl={byok.baseUrl}
+          byokModelId={byok.modelId}
           onOpenSettings={openSettings}
         />
       ) : tab === "ai" ? (
@@ -446,18 +451,20 @@ export function ExplorerScreen({
         selectedModel={selectedModel}
         availableModels={availableModels}
         showReasoning={showReasoning}
-        byokEnabled={byokEnabled}
-        byokApiKey={byokApiKey}
-        byokBaseUrl={byokBaseUrl}
-        byokModelId={byokModelId}
+        byokEnabled={byok.enabled}
+        byokApiKey={byok.apiKey}
+        byokBaseUrl={byok.baseUrl}
+        byokModelId={byok.modelId}
         onSave={(settings) => {
           saveSettings(settings);
           setSelectedModel(settings.modelId ?? availableModels[0] ?? "");
           setShowReasoning(settings.showReasoning !== false);
-          setByokEnabled(settings.byokEnabled ?? false);
-          setByokApiKey(settings.byokApiKey ?? "");
-          setByokBaseUrl(settings.byokBaseUrl ?? "");
-          setByokModelId(settings.byokModelId ?? "");
+          setByok({
+            enabled: settings.byokEnabled ?? false,
+            apiKey: settings.byokApiKey ?? "",
+            baseUrl: settings.byokBaseUrl ?? "",
+            modelId: settings.byokModelId ?? "",
+          });
           setIsSettingsOpen(false);
         }}
         onClose={() => setIsSettingsOpen(false)}

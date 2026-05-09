@@ -251,10 +251,6 @@ export function SettingsModal({
 
   const selectedPreset = BYOK_PROVIDER_PRESETS.find((p) => p.baseUrl === pendingByokBaseUrl) ?? BYOK_PROVIDER_PRESETS[BYOK_PROVIDER_PRESETS.length - 1];
 
-  function handlePresetChange(baseUrl: string) {
-    setPendingByokBaseUrl(baseUrl);
-  }
-
   return (
     <div className="dn-modal-backdrop" role="presentation">
       <section className="dn-modal dn-settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -318,7 +314,7 @@ export function SettingsModal({
                     <select
                       id="settings-byok-provider"
                       value={selectedPreset.baseUrl}
-                      onChange={(e) => handlePresetChange(e.target.value)}
+                      onChange={(e) => setPendingByokBaseUrl(e.target.value)}
                     >
                       {BYOK_PROVIDER_PRESETS.map((preset) => (
                         <option key={preset.label} value={preset.baseUrl}>{preset.label}</option>
@@ -328,7 +324,7 @@ export function SettingsModal({
                   </div>
                 </div>
               </div>
-              {selectedPreset.label === "Custom URL" ? (
+              {!selectedPreset.baseUrl ? (
                 <div className="dn-settings-field-row">
                   <label className="dn-settings-sublabel" htmlFor="settings-byok-baseurl">Base URL</label>
                   <div className="dn-field dn-settings-field">
@@ -365,7 +361,7 @@ export function SettingsModal({
                     id="settings-byok-model"
                     type="text"
                     className="dn-text-input"
-                    placeholder={selectedPreset.label === "OpenRouter" ? "openai/gpt-4o-mini" : "gpt-4o-mini"}
+                    placeholder={selectedPreset.baseUrl.includes("openrouter") ? "openai/gpt-4o-mini" : "gpt-4o-mini"}
                     value={pendingByokModelId}
                     onChange={(e) => setPendingByokModelId(e.target.value)}
                     autoComplete="off"
