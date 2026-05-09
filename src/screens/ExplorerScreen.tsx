@@ -406,7 +406,6 @@ export function ExplorerScreen({
           pendingPrompt={pendingAiPrompt}
           onPendingPromptConsumed={() => setPendingAiPrompt(null)}
           selectedModel={selectedModel}
-          availableModels={availableModels}
           showReasoning={showReasoning}
           onOpenSettings={openSettings}
         />
@@ -439,10 +438,10 @@ export function ExplorerScreen({
         selectedModel={selectedModel}
         availableModels={availableModels}
         showReasoning={showReasoning}
-        onSave={(modelId, nextShowReasoning) => {
-          saveSettings({ modelId, showReasoning: nextShowReasoning });
-          setSelectedModel(modelId);
-          setShowReasoning(nextShowReasoning);
+        onSave={(settings) => {
+          saveSettings(settings);
+          setSelectedModel(settings.modelId ?? availableModels[0] ?? "");
+          setShowReasoning(settings.showReasoning !== false);
           setIsSettingsOpen(false);
         }}
         onClose={() => setIsSettingsOpen(false)}

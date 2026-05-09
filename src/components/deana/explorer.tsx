@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type De
 import { SORT_FILTER_OPTIONS, type ExplorerFilters } from "../../lib/explorer";
 import type { ExplorerTab, InsightCategory, MarkerSort, ProfileMeta, ReportEntry, ReportFacets, StoredMarkerSummary, StoredReportEntry } from "../../types";
 import { modelDisplayName } from "../../lib/ai/models";
+import type { DeanaSettings } from "../../lib/settings";
 import { DEANA_GITHUB_URL, PrivacyModal, SupportDeanaModal } from "./marketing";
 import { DeanaWordmark, Icon, IconName } from "./ui";
 
@@ -138,21 +139,19 @@ export function ExplorerShell({
             <button className="dn-icon-button" aria-label="Menu" aria-expanded={isMobileMenuOpen} onClick={() => setIsMobileMenuOpen((v) => !v)}>
               <Icon name="menu" />
             </button>
+            {isMobileMenuOpen ? <div className="dn-mobile-menu-backdrop" onClick={() => setIsMobileMenuOpen(false)} /> : null}
             {isMobileMenuOpen ? (
-              <>
-                <div className="dn-mobile-menu-backdrop" onClick={() => setIsMobileMenuOpen(false)} />
-                <nav className="dn-mobile-menu" aria-label="Mobile menu">
-                  <button onClick={() => { setIsMobileMenuOpen(false); onOpenSettings?.(); }}>
-                    <Icon name="settings" /> Settings
-                  </button>
-                  <button onClick={() => { setIsMobileMenuOpen(false); setModal("support"); }}>
-                    <Icon name="heart" /> Support Deana
-                  </button>
-                  <button onClick={() => { setIsMobileMenuOpen(false); setModal("help"); }}>
-                    <Icon name="help" /> Help
-                  </button>
-                </nav>
-              </>
+              <nav className="dn-mobile-menu" aria-label="Mobile menu">
+                <button onClick={() => { setIsMobileMenuOpen(false); onOpenSettings?.(); }}>
+                  <Icon name="settings" /> Settings
+                </button>
+                <button onClick={() => { setIsMobileMenuOpen(false); setModal("support"); }}>
+                  <Icon name="heart" /> Support Deana
+                </button>
+                <button onClick={() => { setIsMobileMenuOpen(false); setModal("help"); }}>
+                  <Icon name="help" /> Help
+                </button>
+              </nav>
             ) : null}
           </div>
         </header>
@@ -226,7 +225,7 @@ export function SettingsModal({
   selectedModel: string;
   availableModels: string[];
   showReasoning: boolean;
-  onSave: (modelId: string, showReasoning: boolean) => void;
+  onSave: (settings: DeanaSettings) => void;
   onClose: () => void;
 }) {
   const [pendingModel, setPendingModel] = useState(selectedModel);
@@ -268,7 +267,7 @@ export function SettingsModal({
         </div>
         <div className="dn-modal-actions">
           <button className="dn-button dn-button--secondary" type="button" onClick={onClose}>Cancel</button>
-          <button className="dn-button dn-button--primary" type="button" onClick={() => onSave(pendingModel, pendingShowReasoning)}>Save</button>
+          <button className="dn-button dn-button--primary" type="button" onClick={() => onSave({ modelId: pendingModel, showReasoning: pendingShowReasoning })}>Save</button>
         </div>
       </section>
     </div>

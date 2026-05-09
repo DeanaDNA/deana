@@ -48,7 +48,6 @@ interface ExplorerAiChatProps {
   pendingPrompt?: string | null;
   onPendingPromptConsumed?: () => void;
   selectedModel?: string;
-  availableModels?: string[];
   showReasoning?: boolean;
   onOpenSettings?: () => void;
 }
@@ -196,11 +195,6 @@ function toUiMessages(messages: StoredChatMessage[]): UIMessage[] {
   }));
 }
 
-function threadTitleFromPrompt(prompt: string): string {
-  const title = prompt.replace(/\s+/g, " ").trim();
-  if (!title) return "New chat";
-  return title.length > 52 ? `${title.slice(0, 49)}...` : title;
-}
 
 async function generateThreadTitle(prompt: string): Promise<string | null> {
   const response = await fetch("/api/chat-title", {
@@ -550,7 +544,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
     return {
       id: makeId("thread"),
       profileId: props.profile.id,
-      title: prompt ? threadTitleFromPrompt(prompt) : "New chat",
+      title: formatChatTitle(prompt ?? "") || "New chat",
       createdAt: now,
       updatedAt: now,
     };
@@ -606,7 +600,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
     const now = new Date().toISOString();
     const fallbackThread = {
       ...thread,
-      title: threadTitleFromPrompt(prompt),
+      title: formatChatTitle(prompt) || "New chat",
       updatedAt: now,
     };
     activeThreadRef.current = fallbackThread;
@@ -1195,7 +1189,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
                   <p>Deana can answer from the current report context and search saved findings when it needs more detail.</p>
                   <div className="dn-ai-model-indicator">
                     <Icon name="settings" size={14} />
-                    <span>Using {modelDisplayName(props.selectedModel ?? props.availableModels?.[0] ?? "")}</span>
+                    <span>Using {modelDisplayName(props.selectedModel ?? "")}</span>
                     {props.onOpenSettings ? (
                       <button type="button" className="dn-ai-model-indicator__change" onClick={props.onOpenSettings}>
                         Change
