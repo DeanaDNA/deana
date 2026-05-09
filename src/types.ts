@@ -470,6 +470,35 @@ export interface ChatFollowUpSuggestion {
   body: string;
 }
 
+export interface StoredChatContextStats {
+  findingCount: number;
+  contextBytes: number;
+  maxFindings?: number;
+  maxMessageLength?: number;
+  byok: boolean;
+}
+
+export interface StoredChatReasoningBlock {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface StoredChatToolEvent {
+  id: string;
+  toolName: string;
+  createdAt: string;
+  status: "success" | "empty" | "error";
+  searchPlan?: ChatSearchPlan;
+  returnedFindingIds: string[];
+  cursor?: ChatRetrievalCursor;
+  resultCount: number;
+  candidateWindowCount?: number;
+  remainingCandidateCount?: number;
+  rationale?: string;
+  errorText?: string;
+}
+
 export interface StoredChatContextFinding {
   id: string;
   link: string;
@@ -525,7 +554,11 @@ export interface StoredChatMessage {
   createdAt: string;
   trace?: ChatRetrievalTrace;
   contextFindings?: StoredChatContextFinding[];
+  contextFindingIds?: string[];
+  contextStats?: StoredChatContextStats;
+  toolEvents?: StoredChatToolEvent[];
   reasoningSummary?: string | null;
+  reasoningBlocks?: StoredChatReasoningBlock[];
   followUps?: ChatFollowUpSuggestion[];
   modelId?: string;
 }

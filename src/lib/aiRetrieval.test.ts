@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildEntrySearchText, matchesEntryFilters } from "./explorer";
 import { searchReportEntriesForChat } from "./aiRetrieval";
 import { clearSearchIndex } from "./ai/searchIndex";
+import { MAX_BYOK_CONTEXT_FINDINGS, MAX_CHAT_CONTEXT_FINDINGS } from "./aiChat";
 import {
   deleteSearchIndexCache,
   loadCategoryPage,
@@ -175,6 +176,54 @@ describe("searchReportEntriesForChat", () => {
 
     expect(result.findings).toHaveLength(6);
     expect(result.trace.usedFallback).toBe(false);
+  });
+
+  it("counts remaining matches from loadable ranked findings, not raw index candidates", async () => {
+    const template = storedEntries().find((entry) => entry.category === "medical")!;
+    const entries = Array.from({ length: MAX_CHAT_CONTEXT_FINDINGS + 6 }, (_, index) => withSearchText({
+      ...template,
+      id: `medical-stale-index-${index}`,
+      title: `Stale index Factor V context ${index}`,
+      summary: "Factor V Leiden context.",
+      detail: "Primary evidence context for Factor V Leiden.",
+      genes: ["F5"],
+      topics: ["Blood clotting"],
+      conditions: ["Factor V Leiden"],
+      matchedMarkers: [{ rsid: `rs${610000 + index}`, genotype: "CT", chromosome: "1", position: 100 + index, gene: "F5" }],
+      sort: {
+        ...template.sort,
+        severity: 100 - index,
+      },
+    }));
+    installEntries(entries);
+    vi.mocked(loadReportEntriesByIds).mockImplementation(async (_profileId: string, ids: string[]) =>
+      ids
+        .slice(0, 7)
+        .map((id) => entries.find((entry) => entry.id === id))
+        .filter((entry): entry is StoredReportEntry => Boolean(entry)),
+    );
+
+    const result = await searchReportEntriesForChat({
+      profileId: "profile-ai-search",
+      prompt: "show me factor v findings",
+      plan: {
+        query: "factor v",
+        categories: ["medical"],
+        genes: ["F5"],
+        rsids: [],
+        topics: ["blood clotting"],
+        conditions: ["Factor V Leiden"],
+        relatedTerms: ["factor v"],
+        evidence: [],
+        rationale: "Search locally for Factor V context.",
+      },
+    });
+
+    expect(result.findings).toHaveLength(7);
+    expect(result.trace.indexCandidateCount).toBeGreaterThan(result.findings.length);
+    expect(result.trace.candidateWindowCount).toBe(7);
+    expect(result.trace.remainingCandidateCount).toBe(0);
+    expect(result.trace.retrievalCursor?.hasMore).toBe(false);
   });
 
   it("uses MiniSearch candidate strength instead of rsID plans to choose the result count", async () => {
@@ -478,11 +527,11 @@ describe("searchReportEntriesForChat", () => {
       },
     });
 
-    expect(result.findings).toHaveLength(18);
+    expect(result.findings).toHaveLength(MAX_CHAT_CONTEXT_FINDINGS);
     expect(result.findings.map((finding) => finding.id)).toContain("local-traits-snpedia-baldness-context");
     expect(result.trace.candidateWindowCount).toBe(31);
-    expect(result.trace.sentCount).toBe(18);
-    expect(result.trace.remainingCandidateCount).toBe(13);
+    expect(result.trace.sentCount).toBe(MAX_CHAT_CONTEXT_FINDINGS);
+    expect(result.trace.remainingCandidateCount).toBe(31 - MAX_CHAT_CONTEXT_FINDINGS);
     expect(result.trace.retrievalCursor?.hasMore).toBe(true);
 
     const nextResult = await searchReportEntriesForChat({
@@ -496,6 +545,57 @@ describe("searchReportEntriesForChat", () => {
     expect(nextResult.findings.length).toBeGreaterThan(0);
     expect(nextResult.findings.some((finding) => result.findings.some((previous) => previous.id === finding.id))).toBe(false);
     expect(nextResult.trace.retrievalCursor?.sentFindingIds.length).toBeGreaterThan(result.trace.retrievalCursor?.sentFindingIds.length ?? 0);
+  });
+
+  it("uses an explicit BYOK limit above the default retrieval cap", async () => {
+    const template = storedEntries()[0];
+    const matches = Array.from({ length: 60 }, (_, index) => withSearchText({
+      ...template,
+      id: `local-medical-byok-context-${index}`,
+      category: "medical",
+      title: `BYOK Factor V context ${index}`,
+      summary: "Factor V Leiden context.",
+      detail: "Primary evidence context for Factor V Leiden.",
+      evidenceTier: "high",
+      genes: ["F5"],
+      topics: ["Blood clotting"],
+      conditions: ["Factor V Leiden"],
+      matchedMarkers: [{ rsid: `rs${500000 + index}`, genotype: "CT", chromosome: "1", position: 100 + index, gene: "F5" }],
+    }));
+    installEntries(matches);
+
+    const result = await searchReportEntriesForChat({
+      profileId: "profile-ai-search",
+      prompt: "show me factor v findings",
+      plan: {
+        query: "factor v",
+        categories: ["medical"],
+        genes: ["F5"],
+        rsids: [],
+        topics: ["blood clotting"],
+        conditions: ["Factor V Leiden"],
+        relatedTerms: ["factor v"],
+        evidence: [],
+        rationale: "Search locally for Factor V context.",
+      },
+      limit: MAX_BYOK_CONTEXT_FINDINGS,
+    });
+
+    expect(result.findings).toHaveLength(MAX_BYOK_CONTEXT_FINDINGS);
+    expect(result.trace.sentCount).toBe(MAX_BYOK_CONTEXT_FINDINGS);
+    expect(result.trace.retrievalCursor?.hasMore).toBe(true);
+
+    const nextResult = await searchReportEntriesForChat({
+      profileId: "profile-ai-search",
+      prompt: result.trace.searchPlan?.query ?? "factor v",
+      plan: result.trace.searchPlan,
+      limit: MAX_BYOK_CONTEXT_FINDINGS,
+      excludeIds: result.trace.retrievalCursor?.sentFindingIds,
+      offset: result.trace.retrievalCursor?.nextOffset,
+    });
+
+    expect(nextResult.findings).toHaveLength(10);
+    expect(nextResult.findings.some((finding) => result.findings.some((previous) => previous.id === finding.id))).toBe(false);
   });
 
   it("keeps exact gene and title matches ahead of broad informational matches", async () => {

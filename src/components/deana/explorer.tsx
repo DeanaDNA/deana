@@ -2,6 +2,17 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type De
 import { SORT_FILTER_OPTIONS, type ExplorerFilters } from "../../lib/explorer";
 import type { ExplorerTab, InsightCategory, MarkerSort, ProfileMeta, ReportEntry, ReportFacets, StoredMarkerSummary, StoredReportEntry } from "../../types";
 import { modelDisplayName } from "../../lib/ai/models";
+import {
+  byokProviderPresetFromBaseUrl,
+  byokProviderPresetFromId,
+  byokProviderPresetsForHost as providerPresetsForHost,
+  MAX_BYOK_CONTEXT_FINDINGS_LIMIT,
+  MAX_BYOK_USER_TEXT_LENGTH,
+  MIN_BYOK_CONTEXT_FINDINGS,
+  MIN_BYOK_USER_TEXT_LENGTH,
+  normalizeByokMaxFindings,
+  normalizeByokMaxMessageLength,
+} from "../../lib/aiChat";
 import type { DeanaSettings } from "../../lib/settings";
 import { DEANA_GITHUB_URL, PrivacyModal, SupportDeanaModal } from "./marketing";
 import { DeanaWordmark, Icon, IconName } from "./ui";
@@ -219,17 +230,47 @@ export function SettingsModal({
   selectedModel,
   availableModels,
   showReasoning,
+  byokEnabled: initialByokEnabled = false,
+  byokProviderId: initialByokProviderId = "",
+  byokApiKey: initialByokApiKey = "",
+  byokBaseUrl: initialByokBaseUrl = "",
+  byokModelId: initialByokModelId = "",
+  byokMaxMessageLength: initialByokMaxMessageLength,
+  byokMaxFindings: initialByokMaxFindings,
   onSave,
   onClose,
 }: {
   selectedModel: string;
   availableModels: string[];
   showReasoning: boolean;
+  byokEnabled?: boolean;
+  byokProviderId?: string;
+  byokApiKey?: string;
+  byokBaseUrl?: string;
+  byokModelId?: string;
+  byokMaxMessageLength?: number;
+  byokMaxFindings?: number;
   onSave: (settings: DeanaSettings) => void;
   onClose: () => void;
 }) {
+  const initialByokPresets = providerPresetsForHost(window.location.hostname);
+  const initialByokPreset = initialByokProviderId
+    ? byokProviderPresetFromId(initialByokProviderId, initialByokPresets)
+    : byokProviderPresetFromBaseUrl(initialByokBaseUrl, initialByokPresets);
   const [pendingModel, setPendingModel] = useState(selectedModel);
   const [pendingShowReasoning, setPendingShowReasoning] = useState(showReasoning);
+  const [pendingByokEnabled, setPendingByokEnabled] = useState(initialByokEnabled);
+  const [pendingByokProviderId, setPendingByokProviderId] = useState(initialByokPreset.providerId);
+  const [pendingByokApiKey, setPendingByokApiKey] = useState(initialByokApiKey);
+  const [pendingByokBaseUrl, setPendingByokBaseUrl] = useState(initialByokBaseUrl || initialByokPreset.baseUrl);
+  const [pendingByokModelId, setPendingByokModelId] = useState(initialByokModelId);
+  const [pendingByokMaxMessageLength, setPendingByokMaxMessageLength] = useState(String(normalizeByokMaxMessageLength(initialByokMaxMessageLength)));
+  const [pendingByokMaxFindings, setPendingByokMaxFindings] = useState(String(normalizeByokMaxFindings(initialByokMaxFindings)));
+
+  const byokProviderPresets = providerPresetsForHost(window.location.hostname);
+  const selectedPreset = pendingByokProviderId
+    ? byokProviderPresetFromId(pendingByokProviderId, byokProviderPresets)
+    : byokProviderPresetFromBaseUrl(pendingByokBaseUrl, byokProviderPresets);
 
   return (
     <div className="dn-modal-backdrop" role="presentation">
@@ -238,24 +279,26 @@ export function SettingsModal({
           <h1 id="settings-title" className="dn-settings-modal__title">Settings</h1>
           <button className="dn-icon-button" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
         </div>
-        <div className="dn-settings-section">
-          <label className="dn-settings-label" htmlFor="settings-model-select">AI Model</label>
-          <p className="dn-settings-description">Choose the AI model used for chat. Settings are saved locally in this browser.</p>
-          <div className="dn-field dn-field--select dn-settings-field">
-            <div className="dn-select-control">
-              <select
-                id="settings-model-select"
-                value={pendingModel}
-                onChange={(e) => setPendingModel(e.target.value)}
-              >
-                {availableModels.map((modelId) => (
-                  <option key={modelId} value={modelId}>{modelDisplayName(modelId)}</option>
-                ))}
-              </select>
-              <Icon name="chevronDown" size={18} />
+        {!pendingByokEnabled ? (
+          <div className="dn-settings-section">
+            <label className="dn-settings-label" htmlFor="settings-model-select">AI Model</label>
+            <p className="dn-settings-description">Choose the AI model used for chat. Settings are saved locally in this browser.</p>
+            <div className="dn-field dn-field--select dn-settings-field">
+              <div className="dn-select-control">
+                <select
+                  id="settings-model-select"
+                  value={pendingModel}
+                  onChange={(e) => setPendingModel(e.target.value)}
+                >
+                  {availableModels.map((modelId) => (
+                    <option key={modelId} value={modelId}>{modelDisplayName(modelId)}</option>
+                  ))}
+                </select>
+                <Icon name="chevronDown" size={18} />
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
         <div className="dn-settings-toggle-row">
           <label className="dn-settings-label" htmlFor="settings-reasoning-toggle">Show model reasoning</label>
           <p className="dn-settings-description">Display the model's thinking process before each response.</p>
@@ -270,9 +313,144 @@ export function SettingsModal({
             <span className="dn-filter-check__label">Show reasoning</span>
           </label>
         </div>
+        <div className="dn-settings-section dn-settings-section--byok">
+          <label className="dn-settings-label" htmlFor="settings-byok-toggle">Custom API key (BYOK)</label>
+          <p className="dn-settings-description">Use your own API key instead of the built-in gateway. Works with OpenAI, OpenRouter, and any OpenAI-compatible endpoint. Your key is stored only in this browser.</p>
+          <label className="dn-filter-check" htmlFor="settings-byok-toggle">
+            <input
+              id="settings-byok-toggle"
+              className="dn-filter-check__input"
+              type="checkbox"
+              checked={pendingByokEnabled}
+              onChange={(e) => setPendingByokEnabled(e.target.checked)}
+            />
+            <span className="dn-filter-check__label">Use my own API key</span>
+          </label>
+          {pendingByokEnabled ? (
+            <div className="dn-byok-fields">
+              <div className="dn-settings-field-row">
+                <label className="dn-settings-sublabel" htmlFor="settings-byok-provider">Provider</label>
+                <div className="dn-field dn-field--select dn-settings-field">
+                  <div className="dn-select-control">
+                    <select
+                      id="settings-byok-provider"
+                      value={selectedPreset.providerId}
+                      onChange={(e) => {
+                        const preset = byokProviderPresetFromId(e.target.value, byokProviderPresets);
+                        setPendingByokProviderId(preset.providerId);
+                        setPendingByokBaseUrl(preset.baseUrl);
+                        if (!pendingByokModelId.trim()) setPendingByokModelId(preset.defaultModel);
+                      }}
+                    >
+                      {byokProviderPresets.map((preset) => (
+                        <option key={preset.providerId} value={preset.providerId}>{preset.label}</option>
+                      ))}
+                    </select>
+                    <Icon name="chevronDown" size={18} />
+                  </div>
+                </div>
+              </div>
+              {!selectedPreset.baseUrl ? (
+                <div className="dn-settings-field-row">
+                  <label className="dn-settings-sublabel" htmlFor="settings-byok-baseurl">Base URL</label>
+                  <div className="dn-field dn-settings-field">
+                    <input
+                      id="settings-byok-baseurl"
+                      type="url"
+                      className="dn-text-input"
+                      placeholder="http://localhost:11434/v1"
+                      value={pendingByokBaseUrl}
+                      onChange={(e) => {
+                        setPendingByokProviderId("custom");
+                        setPendingByokBaseUrl(e.target.value);
+                      }}
+                      autoComplete="off"
+                    />
+                  </div>
+                </div>
+              ) : null}
+              <div className="dn-settings-field-row">
+                <label className="dn-settings-sublabel" htmlFor="settings-byok-apikey">API Key</label>
+                <div className="dn-field dn-settings-field">
+                  <input
+                    id="settings-byok-apikey"
+                    type="password"
+                    className="dn-text-input"
+                    placeholder="sk-..."
+                    value={pendingByokApiKey}
+                    onChange={(e) => setPendingByokApiKey(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+              <div className="dn-settings-field-row">
+                <label className="dn-settings-sublabel" htmlFor="settings-byok-model">Model ID</label>
+                <div className="dn-field dn-settings-field">
+                  <input
+                    id="settings-byok-model"
+                    type="text"
+                    className="dn-text-input"
+                    placeholder={selectedPreset.defaultModel}
+                    value={pendingByokModelId}
+                    onChange={(e) => setPendingByokModelId(e.target.value)}
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+              <div className="dn-settings-field-row">
+                <label className="dn-settings-sublabel" htmlFor="settings-byok-message-length">Max message length</label>
+                <p className="dn-settings-description">Maximum characters allowed in each message you send to your custom provider. Higher values can help with long questions but may increase cost or hit provider limits.</p>
+                <div className="dn-field dn-settings-field">
+                  <input
+                    id="settings-byok-message-length"
+                    type="number"
+                    className="dn-text-input"
+                    min={MIN_BYOK_USER_TEXT_LENGTH}
+                    max={MAX_BYOK_USER_TEXT_LENGTH}
+                    step={1}
+                    value={pendingByokMaxMessageLength}
+                    onChange={(e) => setPendingByokMaxMessageLength(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="dn-settings-field-row">
+                <label className="dn-settings-sublabel" htmlFor="settings-byok-max-findings">Max findings sent</label>
+                <p className="dn-settings-description">Maximum compact report findings Deana can include in chat context and local report-search results. The default is 50 for BYOK; increasing it sends more report context to your provider.</p>
+                <div className="dn-field dn-settings-field">
+                  <input
+                    id="settings-byok-max-findings"
+                    type="number"
+                    className="dn-text-input"
+                    min={MIN_BYOK_CONTEXT_FINDINGS}
+                    max={MAX_BYOK_CONTEXT_FINDINGS_LIMIT}
+                    step={1}
+                    value={pendingByokMaxFindings}
+                    onChange={(e) => setPendingByokMaxFindings(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
         <div className="dn-modal-actions">
           <button className="dn-button dn-button--secondary" type="button" onClick={onClose}>Cancel</button>
-          <button className="dn-button dn-button--primary" type="button" onClick={() => onSave({ modelId: pendingModel, showReasoning: pendingShowReasoning })}>Save</button>
+          <button
+            className="dn-button dn-button--primary"
+            type="button"
+            onClick={() => onSave({
+              modelId: pendingModel,
+              showReasoning: pendingShowReasoning,
+              byokEnabled: pendingByokEnabled,
+              byokProviderId: pendingByokEnabled ? selectedPreset.providerId : undefined,
+              byokApiKey: pendingByokEnabled ? pendingByokApiKey : undefined,
+              byokBaseUrl: pendingByokEnabled ? pendingByokBaseUrl : undefined,
+              byokModelId: pendingByokEnabled ? (pendingByokModelId.trim() || selectedPreset.defaultModel) : undefined,
+              byokMaxMessageLength: pendingByokEnabled ? normalizeByokMaxMessageLength(pendingByokMaxMessageLength) : undefined,
+              byokMaxFindings: pendingByokEnabled ? normalizeByokMaxFindings(pendingByokMaxFindings) : undefined,
+            })}
+          >
+            Save
+          </button>
         </div>
       </section>
     </div>

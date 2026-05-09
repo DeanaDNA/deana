@@ -11,6 +11,10 @@ import {
 } from "../components/deana/explorer";
 import { ExplorerAiChat } from "../components/deana/aiChat";
 import { availableModelsFromEnv } from "../lib/ai/models";
+import {
+  normalizeByokMaxFindings,
+  normalizeByokMaxMessageLength,
+} from "../lib/aiChat";
 import { loadSettings, saveSettings } from "../lib/settings";
 import {
   DEFAULT_FILTERS,
@@ -243,6 +247,18 @@ function isEvidencePackStale(profile: ProfileMeta | null): boolean {
 
 const availableModels = availableModelsFromEnv(import.meta.env as Record<string, string | undefined>);
 
+function byokStateFromSettings(settings: ReturnType<typeof loadSettings>) {
+  return {
+    enabled: settings.byokEnabled ?? false,
+    providerId: settings.byokProviderId ?? "",
+    apiKey: settings.byokApiKey ?? "",
+    baseUrl: settings.byokBaseUrl ?? "",
+    modelId: settings.byokModelId ?? "",
+    maxMessageLength: normalizeByokMaxMessageLength(settings.byokMaxMessageLength),
+    maxFindings: normalizeByokMaxFindings(settings.byokMaxFindings),
+  };
+}
+
 export function ExplorerScreen({
   isLibraryReady,
 }: ExplorerScreenProps) {
@@ -261,6 +277,9 @@ export function ExplorerScreen({
   const [showReasoning, setShowReasoning] = useState<boolean>(() => {
     const s = loadSettings();
     return s.showReasoning !== false;
+  });
+  const [byok, setByok] = useState(() => {
+    return byokStateFromSettings(loadSettings());
   });
   const openSettings = useCallback(() => setIsSettingsOpen(true), []);
   const previousTabRef = useRef<ExplorerTab | null>(null);
@@ -399,14 +418,19 @@ export function ExplorerScreen({
       ) : tab === "ai" && isAiEnabled === true ? (
         <ExplorerAiChat
           profile={profile}
-          currentTab={tab}
-          filters={DEFAULT_FILTERS}
           visibleEntries={[]}
           selectedEntry={null}
           pendingPrompt={pendingAiPrompt}
           onPendingPromptConsumed={() => setPendingAiPrompt(null)}
           selectedModel={selectedModel}
           showReasoning={showReasoning}
+          byokEnabled={byok.enabled}
+          byokProviderId={byok.providerId}
+          byokApiKey={byok.apiKey}
+          byokBaseUrl={byok.baseUrl}
+          byokModelId={byok.modelId}
+          byokMaxMessageLength={byok.maxMessageLength}
+          byokMaxFindings={byok.maxFindings}
           onOpenSettings={openSettings}
         />
       ) : tab === "ai" ? (
@@ -438,10 +462,18 @@ export function ExplorerScreen({
         selectedModel={selectedModel}
         availableModels={availableModels}
         showReasoning={showReasoning}
+        byokEnabled={byok.enabled}
+        byokProviderId={byok.providerId}
+        byokApiKey={byok.apiKey}
+        byokBaseUrl={byok.baseUrl}
+        byokModelId={byok.modelId}
+        byokMaxMessageLength={byok.maxMessageLength}
+        byokMaxFindings={byok.maxFindings}
         onSave={(settings) => {
           saveSettings(settings);
           setSelectedModel(settings.modelId ?? availableModels[0] ?? "");
           setShowReasoning(settings.showReasoning !== false);
+          setByok(byokStateFromSettings(settings));
           setIsSettingsOpen(false);
         }}
         onClose={() => setIsSettingsOpen(false)}

@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_FILTERS } from "./explorer";
 import {
   buildChatContext,
   buildGatewayProviderOptions,
+  byokProviderPresetFromBaseUrl,
+  byokProviderPresetFromId,
+  byokProviderPresetsForHost,
+  coerceChatSearchPlan,
   extractChatFollowUps,
   mergeChatFindings,
+  MAX_BYOK_CONTEXT_FINDINGS,
+  MAX_BYOK_CONTEXT_FINDINGS_LIMIT,
+  MAX_BYOK_USER_TEXT_LENGTH,
   MAX_CHAT_CONTEXT_FINDINGS,
+  MAX_CHAT_USER_TEXT_LENGTH,
+  normalizeByokMaxFindings,
+  normalizeByokMaxMessageLength,
   normalizeChatFollowUps,
+  shouldSearchReportForPrompt,
 } from "./aiChat";
 import { DEANA_MODELS } from "./ai/models";
 import { makeProfileMeta, makeStoredReportEntries } from "../test/fixtures";
@@ -21,8 +31,6 @@ describe("buildChatContext", () => {
     const entries = makeStoredReportEntries(profile.id);
     const context = buildChatContext({
       profile,
-      currentTab: "medical",
-      filters: DEFAULT_FILTERS,
       visibleEntries: entries,
       selectedEntry: entries[0],
     });
@@ -32,6 +40,11 @@ describe("buildChatContext", () => {
     expect(serialized).not.toContain("private-raw-dna.txt");
     expect(serialized).not.toContain("profile-secret-id");
     expect(serialized).not.toContain(String(profile.dna.markers[0][2]));
+    expect(serialized).not.toContain("currentTab");
+    expect(serialized).not.toContain("activeFilters");
+    expect(serialized).not.toContain("selectedFindingId");
+    expect(serialized).not.toContain("\"q\"");
+    expect(serialized).not.toContain("\"sort\"");
     expect(context.report.provider).toBe(profile.dna.provider);
     expect(context.findings[0].markers[0].rsid).toMatch(/^rs\d+$/);
   });
@@ -46,8 +59,6 @@ describe("buildChatContext", () => {
     }));
     const context = buildChatContext({
       profile,
-      currentTab: "medical",
-      filters: DEFAULT_FILTERS,
       visibleEntries: entries,
       selectedEntry: entries[4],
     });
@@ -57,20 +68,34 @@ describe("buildChatContext", () => {
     expect(new Set(context.findings.map((finding) => finding.id)).size).toBe(context.findings.length);
   });
 
+  it("uses an explicit max findings override when provided", () => {
+    const profile = makeProfileMeta();
+    const template = makeStoredReportEntries(profile.id)[0];
+    const entries = Array.from({ length: MAX_BYOK_CONTEXT_FINDINGS + 5 }, (_, index) => ({
+      ...template,
+      id: `finding-${index}`,
+      title: `Finding ${index}`,
+    }));
+    const context = buildChatContext({
+      profile,
+      visibleEntries: entries,
+      selectedEntry: null,
+      maxFindings: MAX_BYOK_CONTEXT_FINDINGS,
+    });
+
+    expect(context.findings).toHaveLength(MAX_BYOK_CONTEXT_FINDINGS);
+  });
+
   it("keeps current findings before prior retrieved findings for follow-ups", () => {
     const profile = makeProfileMeta();
     const entries = makeStoredReportEntries(profile.id);
     const priorContext = buildChatContext({
       profile,
-      currentTab: "ai",
-      filters: DEFAULT_FILTERS,
       visibleEntries: [],
       selectedEntry: null,
       retrievedFindings: entries.slice(1, 3).map((entry) => ({
         ...buildChatContext({
           profile,
-          currentTab: "medical",
-          filters: DEFAULT_FILTERS,
           visibleEntries: [entry],
           selectedEntry: entry,
         }).findings[0],
@@ -78,8 +103,6 @@ describe("buildChatContext", () => {
     });
     const context = buildChatContext({
       profile,
-      currentTab: "medical",
-      filters: DEFAULT_FILTERS,
       visibleEntries: entries,
       selectedEntry: entries[0],
       retrievedFindings: priorContext.findings,
@@ -96,8 +119,6 @@ describe("mergeChatFindings", () => {
     const profile = makeProfileMeta();
     const template = buildChatContext({
       profile,
-      currentTab: "medical",
-      filters: DEFAULT_FILTERS,
       visibleEntries: makeStoredReportEntries(profile.id),
       selectedEntry: null,
     }).findings[0];
@@ -110,6 +131,87 @@ describe("mergeChatFindings", () => {
 
     expect(merged).toHaveLength(MAX_CHAT_CONTEXT_FINDINGS);
     expect(merged.filter((finding) => finding.id === "finding-1")).toHaveLength(1);
+  });
+});
+
+describe("BYOK chat cap normalization", () => {
+  it("uses BYOK defaults for missing or invalid values", () => {
+    expect(normalizeByokMaxMessageLength(undefined)).toBe(MAX_CHAT_USER_TEXT_LENGTH);
+    expect(normalizeByokMaxMessageLength("not-a-number")).toBe(MAX_CHAT_USER_TEXT_LENGTH);
+    expect(normalizeByokMaxFindings(undefined)).toBe(MAX_BYOK_CONTEXT_FINDINGS);
+    expect(normalizeByokMaxFindings("not-a-number")).toBe(MAX_BYOK_CONTEXT_FINDINGS);
+  });
+
+  it("floors decimals and clamps values to the hard range", () => {
+    expect(normalizeByokMaxMessageLength(12.9)).toBe(12);
+    expect(normalizeByokMaxMessageLength(-5)).toBe(1);
+    expect(normalizeByokMaxMessageLength(MAX_BYOK_USER_TEXT_LENGTH + 1)).toBe(MAX_BYOK_USER_TEXT_LENGTH);
+    expect(normalizeByokMaxFindings(50.8)).toBe(50);
+    expect(normalizeByokMaxFindings(-10)).toBe(1);
+    expect(normalizeByokMaxFindings(MAX_BYOK_CONTEXT_FINDINGS_LIMIT + 1)).toBe(MAX_BYOK_CONTEXT_FINDINGS_LIMIT);
+  });
+});
+
+describe("BYOK provider normalization", () => {
+  it("uses provider defaults for known providers", () => {
+    expect(byokProviderPresetFromId("openai").defaultModel).toBe("gpt-4o-mini");
+    expect(byokProviderPresetFromId("openrouter").defaultModel).toBe("openai/gpt-4o-mini");
+    expect(byokProviderPresetFromBaseUrl("http://localhost:11434/v1", byokProviderPresetsForHost("localhost")).providerId).toBe("ollama");
+    expect(byokProviderPresetFromBaseUrl("https://unknown.example/v1").providerId).toBe("custom");
+  });
+
+  it("includes Ollama only for local app hosts", () => {
+    expect(byokProviderPresetsForHost("localhost").map((preset) => preset.label)).toContain("Ollama");
+    expect(byokProviderPresetsForHost("deana.example").map((preset) => preset.label)).not.toContain("Ollama");
+  });
+});
+
+describe("shouldSearchReportForPrompt", () => {
+  it("requires search for explicit report searches and phenotype questions without context", () => {
+    expect(shouldSearchReportForPrompt("Search my report for rs6025", 5)).toBe(true);
+    expect(shouldSearchReportForPrompt("Will I go bald?", 0)).toBe(true);
+  });
+
+  it("does not require search for ordinary follow-ups with existing context", () => {
+    expect(shouldSearchReportForPrompt("Explain the first finding in simpler terms", 3)).toBe(false);
+  });
+});
+
+describe("coerceChatSearchPlan", () => {
+  it("fills missing fields and uses the latest user prompt as the fallback query", () => {
+    expect(coerceChatSearchPlan({}, "Anything about rs6025 clotting?")).toEqual({
+      query: "Anything about rs6025 clotting?",
+      categories: [],
+      genes: [],
+      rsids: ["rs6025"],
+      topics: [],
+      conditions: [],
+      relatedTerms: [],
+      evidence: [],
+      rationale: "Searched the local report for terms from your prompt.",
+    });
+  });
+
+  it("normalizes partial BYOK tool input and discards invalid values", () => {
+    expect(coerceChatSearchPlan({
+      query: " Factor V Leiden ",
+      categories: ["medical", "bad-category", "drug", "medical"],
+      genes: "F5, ",
+      rsids: ["RS6025", "not-rsid", "rs1799963"],
+      evidence: ["high", "weak"],
+      related_terms: [" clotting ", ""],
+      rationale: " Search local clotting findings. ",
+    })).toEqual({
+      query: "Factor V Leiden",
+      categories: ["medical", "drug"],
+      genes: ["F5"],
+      rsids: ["rs6025", "rs1799963"],
+      topics: [],
+      conditions: [],
+      relatedTerms: ["clotting"],
+      evidence: ["high"],
+      rationale: "Search local clotting findings.",
+    });
   });
 });
 
