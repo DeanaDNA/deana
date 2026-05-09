@@ -1207,7 +1207,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
                   </button>
                 </div>
               ) : null}
-              {messages.map((message) => (
+              {messages.map((message, index) => (
                 <ChatMessage
                   key={message.id}
                   role={message.role}
@@ -1217,6 +1217,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
                   interpretedFindingCount={contextFindingsByMessageRef.current[message.id]?.length}
                   reasoningSummary={messageReasoning(message) ?? reasoningByMessageRef.current[message.id] ?? null}
                   showReasoning={props.showReasoning !== false}
+                  isStreamingReasoning={isBusy && index === messages.length - 1}
                   entryTitleById={entryTitleById}
                   components={markdownComponents}
                   onOpenEntry={handleOpenEntry}
@@ -1704,6 +1705,7 @@ const ChatMessage = memo(function ChatMessage({
   interpretedFindingCount,
   reasoningSummary,
   showReasoning,
+  isStreamingReasoning,
   entryTitleById,
   components,
   onOpenEntry,
@@ -1716,6 +1718,7 @@ const ChatMessage = memo(function ChatMessage({
   interpretedFindingCount?: number;
   reasoningSummary: string | null;
   showReasoning: boolean;
+  isStreamingReasoning: boolean;
   entryTitleById: Map<string, string>;
   components: Components;
   onOpenEntry: (entryId: string) => void;
@@ -1729,7 +1732,7 @@ const ChatMessage = memo(function ChatMessage({
   return (
     <article className={`dn-ai-message dn-ai-message--${role}`}>
       {role === "assistant" && modelName ? <p className="dn-ai-model-name">{modelDisplayName(modelName)}</p> : null}
-      {hasReasoning && role === "assistant" && showReasoning ? <ModelReasoning reasoning={reasoningSummary ?? ""} /> : null}
+      {hasReasoning && role === "assistant" && showReasoning ? <ModelReasoning reasoning={reasoningSummary ?? ""} isStreaming={isStreamingReasoning} /> : null}
       {content ? (
         <ReactMarkdown
           remarkPlugins={remarkPlugins}
@@ -1747,14 +1750,24 @@ const ChatMessage = memo(function ChatMessage({
   );
 });
 
-function ModelReasoning({ reasoning }: { reasoning: string }) {
+function ModelReasoning({ reasoning, isStreaming }: { reasoning: string; isStreaming: boolean }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
-    <details className="dn-ai-trace dn-ai-trace--reasoning">
-      <summary><Icon name="spark" /> Thinking</summary>
-      <div className="dn-ai-trace__body">
-        <p>{reasoning}</p>
+    <div className={`dn-ai-trace dn-ai-trace--reasoning${isExpanded ? " is-expanded" : ""}`}>
+      <div className="dn-ai-trace--reasoning__head">
+        <span className="dn-ai-trace--reasoning__label">
+          <Icon name="spark" /> {isStreaming ? "Thinking…" : "Thought Process"}
+        </span>
+        <button type="button" className="dn-ai-reasoning-toggle" onClick={() => setIsExpanded((v) => !v)}>
+          {isExpanded ? "Hide" : "Show"}
+        </button>
       </div>
-    </details>
+      <div className="dn-ai-trace--reasoning__body">
+        <p>{reasoning}</p>
+        {!isExpanded ? <div className="dn-ai-trace--reasoning__fade" aria-hidden="true" /> : null}
+      </div>
+    </div>
   );
 }
 
