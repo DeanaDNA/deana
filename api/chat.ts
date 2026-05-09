@@ -9,7 +9,7 @@ import {
   CHAT_SEARCH_TOOL_NAME,
   MAX_CHAT_CONTEXT_FINDINGS,
 } from "../src/lib/aiChat.js";
-import { chatModelFromEnv } from "../src/lib/ai/models.js";
+import { availableModelsFromEnv, chatModelFromEnv } from "../src/lib/ai/models.js";
 
 declare const process: {
   env: Record<string, string | undefined>;
@@ -135,6 +135,7 @@ const chatRequestSchema = z.object({
   }),
   context: chatContextSchema,
   messages: z.array(uiMessageSchema).min(1).max(MAX_MESSAGES),
+  model: z.string().max(120).optional(),
 });
 
 export function trimMessagesToRecentWindow(body: unknown): unknown {
@@ -277,7 +278,11 @@ export default async function handler(request: Request): Promise<Response> {
       apiKey: getGatewayApiKey(request, process.env),
     });
 
-    const model = chatModelFromEnv(process.env);
+    const allowedModels = availableModelsFromEnv(process.env);
+    const requestedModel = parsed.data.model?.trim();
+    const model = requestedModel && allowedModels.includes(requestedModel)
+      ? requestedModel
+      : chatModelFromEnv(process.env);
     const requiresReportSearch = shouldRequireReportSearch(messages, parsed.data.context);
     const result = streamText({
       model: gateway(model),

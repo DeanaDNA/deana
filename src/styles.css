@@ -378,6 +378,16 @@ a { color: inherit; }
 .dn-modal-actions .dn-button { flex: 1; }
 .dn-confirm-modal { max-width: 520px; text-align: center; }
 .dn-confirm-modal > .dn-round-icon { margin: 0 auto; background: var(--dn-danger-bg); color: var(--dn-clay-dark); }
+.dn-settings-modal { max-width: 500px; }
+.dn-settings-section { display: grid; gap: 8px; margin-top: 8px; }
+.dn-settings-label { font-weight: 600; color: var(--dn-forest); font-size: 0.95rem; }
+.dn-settings-description { margin: 0; color: var(--dn-muted); font-size: 0.9rem; line-height: 1.5; }
+.dn-settings-select { width: 100%; padding: 10px 14px; border: 1px solid var(--dn-line-strong); border-radius: 10px; background: var(--dn-paper); color: var(--dn-forest); font-size: 1rem; appearance: auto; }
+.dn-settings-select:focus { outline: 2px solid var(--dn-forest); outline-offset: 2px; }
+.dn-mobile-menu-backdrop { position: fixed; inset: 0; z-index: 38; }
+.dn-mobile-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 39; min-width: 180px; background: var(--dn-paper); border: 1px solid var(--dn-line); border-radius: 14px; box-shadow: var(--dn-shadow); padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+.dn-mobile-menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 8px 14px; background: transparent; border-radius: 10px; color: var(--dn-forest); font-size: 0.95rem; text-align: left; }
+.dn-mobile-menu button:hover { background: var(--dn-cream); }
 .dn-privacy-modal { max-width: 700px; }
 .dn-privacy-modal h1 { text-align: center; }
 .dn-support-modal { max-width: 640px; text-align: center; }
@@ -898,6 +908,27 @@ a { color: inherit; }
   font-size: 1.06rem;
   line-height: 1.55;
 }
+.dn-ai-model-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--dn-cream);
+  border: 1px solid var(--dn-line);
+  border-radius: 20px;
+  color: var(--dn-muted);
+  font-size: 0.85rem;
+}
+.dn-ai-model-indicator__change {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-left: 2px;
+  color: var(--dn-forest);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .dn-ai-message {
   display: grid;
   gap: 8px;
@@ -930,8 +961,6 @@ a { color: inherit; }
   margin: 0;
   color: var(--dn-muted);
   font-size: 0.78rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 .dn-ai-message code {
   padding: 2px 5px;
