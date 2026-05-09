@@ -25,6 +25,7 @@ const MAX_BODY_BYTES = 4_000;
 const TITLE_SYSTEM_PROMPT = [
   "Create a short, specific Deana chat title from the user's first message only.",
   "Use two to six words.",
+  "Prefer the user's topic and intent over generic report terms.",
   "Preserve the main topic and intent, such as Baldness Risk, Cancer Risk, or Drug Response Takeaways.",
   "For example, 'Am I likely to go bald?' should become 'Investigating Male Pattern Baldness'.",
   "Do not return vague one-word titles like Genetic, Health, Report, Results, or Findings.",

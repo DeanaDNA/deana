@@ -196,7 +196,7 @@ describe("BYOK errors", () => {
 });
 
 describe("buildSystemPrompt", () => {
-  it("keeps follow-up suggestions structured and privacy scoped", () => {
+  it("keeps the report interpretation contract structured and privacy scoped", () => {
     const prompt = buildSystemPrompt(buildChatContext());
 
     expect(prompt).toContain("<!-- deana-follow-ups:");
@@ -204,11 +204,23 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("\"body\":\"Full follow-up prompt to send\"");
     expect(prompt).toContain("Do not include profile names, uploaded file names, raw DNA");
     expect(prompt).toContain("browser-local search");
+    expect(prompt).toContain("Role: You are Deana's report interpreter");
+    expect(prompt).toContain("Answer contract: Start with the direct answer or conclusion");
     expect(prompt).toContain("Do not narrate search planning");
+    expect(prompt).toContain("Local search: Use the searchReportFindings tool only");
     expect(prompt).toContain("do not say you can search or offer to search");
-    expect(prompt).toContain("Call searchReportFindings automatically before answering");
+    expect(prompt).toContain("call searchReportFindings immediately when needed");
+    expect(prompt).toContain("Make at most one local search for a user question");
+    expect(prompt).toContain("If searchReportFindings returns no findings");
+    expect(prompt).toContain("Interpretation rules: Distinguish what the report observed from what it may imply");
+    expect(prompt).toContain("Use evidenceTier, coverage, confidenceNote, warnings, source notes, and disclaimers");
+    expect(prompt).toContain("Do not imply deterministic risk from associations");
     expect(prompt).toContain("cite at most 5 representative findings");
     expect(prompt).toContain("Do not assume the repute field means beneficial or harmful");
+    expect(prompt).toContain("Medical boundaries: Do not provide a medical diagnosis or treatment advice");
+    expect(prompt).toContain("do not recommend medication changes");
+    expect(prompt).toContain("drug-response findings");
+    expect(prompt).toContain("The visible answer must come first and the optional hidden comment must be last");
     expect(prompt).toContain("include at most 2 useful follow-up suggestions");
     expect(prompt).not.toContain("currentTab");
     expect(prompt).not.toContain("activeFilters");

@@ -69,6 +69,7 @@ describe("chat title endpoint", () => {
     expect(mocks.openAiChat).toHaveBeenCalledWith("openai/gpt-4o-mini");
     expect(mocks.generateText).toHaveBeenCalledWith(expect.objectContaining({
       model: { provider: "openai", model: "openai/gpt-4o-mini" },
+      system: expect.stringContaining("Prefer the user's topic and intent over generic report terms."),
       prompt: "Will I go bald?",
       maxOutputTokens: 512,
     }));
