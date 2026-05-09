@@ -3,6 +3,10 @@ const SETTINGS_KEY = "deana-settings";
 export interface DeanaSettings {
   modelId?: string;
   showReasoning?: boolean;
+  byokEnabled?: boolean;
+  byokApiKey?: string;
+  byokBaseUrl?: string;
+  byokModelId?: string;
 }
 
 export function loadSettings(): DeanaSettings {

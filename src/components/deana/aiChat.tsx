@@ -49,6 +49,10 @@ interface ExplorerAiChatProps {
   onPendingPromptConsumed?: () => void;
   selectedModel?: string;
   showReasoning?: boolean;
+  byokEnabled?: boolean;
+  byokApiKey?: string;
+  byokBaseUrl?: string;
+  byokModelId?: string;
   onOpenSettings?: () => void;
 }
 
@@ -711,6 +715,10 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
   const transport = useMemo(() => new DefaultChatTransport({
     api: "/api/chat",
     prepareSendMessagesRequest: async ({ api, messages, body }) => {
+      const props = latestPropsRef.current;
+      const byok = props.byokEnabled && props.byokApiKey
+        ? { byokApiKey: props.byokApiKey, byokBaseUrl: props.byokBaseUrl, byokModelId: props.byokModelId }
+        : {};
       return {
         api,
         body: {
@@ -719,9 +727,10 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
             accepted: true,
             version: CHAT_CONSENT_VERSION,
           },
-          context: buildChatContext({ ...latestPropsRef.current, retrievedFindings: latestFindingsRef.current }),
+          context: buildChatContext({ ...props, retrievedFindings: latestFindingsRef.current }),
           messages: compactChatMessagesForRequest(messages),
-          model: latestPropsRef.current.selectedModel,
+          model: props.selectedModel,
+          ...byok,
         },
       };
     },

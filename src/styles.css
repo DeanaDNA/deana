@@ -388,6 +388,13 @@ a { color: inherit; }
 .dn-settings-label { font-weight: 600; color: var(--dn-forest); font-size: 0.95rem; }
 .dn-settings-description { margin: 0; color: var(--dn-muted); font-size: 0.93rem; line-height: 1.5; }
 .dn-settings-field { margin-top: 4px; }
+.dn-settings-section--byok { margin-top: 16px; border-top: 1px solid var(--dn-line); padding-top: 16px; }
+.dn-settings-section--byok .dn-filter-check { align-items: center; margin-top: 4px; }
+.dn-settings-section--byok .dn-filter-check__input { margin-top: 0; }
+.dn-byok-fields { display: grid; gap: 4px; margin-top: 12px; }
+.dn-settings-field-row { display: grid; gap: 4px; }
+.dn-settings-sublabel { font-size: 0.875rem; font-weight: 600; color: var(--dn-muted); }
+.dn-byok-fields .dn-field { margin-top: 0; }
 .dn-mobile-menu-backdrop { position: fixed; inset: 0; z-index: 38; }
 .dn-mobile-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 39; min-width: 180px; background: var(--dn-paper); border: 1px solid var(--dn-line); border-radius: 14px; box-shadow: var(--dn-shadow); padding: 6px; display: flex; flex-direction: column; gap: 2px; }
 .dn-mobile-menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 8px 14px; background: transparent; border-radius: 10px; color: var(--dn-forest); font-size: 0.95rem; text-align: left; }

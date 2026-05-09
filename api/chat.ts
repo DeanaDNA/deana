@@ -1,4 +1,5 @@
 import { createGateway } from "@ai-sdk/gateway";
+import { createOpenAI } from "@ai-sdk/openai";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { z } from "zod";
 import { getGatewayApiKey, isSameOrigin } from "../src/lib/aiGatewayAuth.js";
@@ -137,6 +138,9 @@ const chatRequestSchema = z.object({
   context: chatContextSchema,
   messages: z.array(uiMessageSchema).min(1).max(MAX_MESSAGES),
   model: z.string().max(120).optional(),
+  byokApiKey: z.string().max(300).optional(),
+  byokBaseUrl: z.string().max(500).optional(),
+  byokModelId: z.string().max(200).optional(),
 });
 
 export function trimMessagesToRecentWindow(body: unknown): unknown {
@@ -275,7 +279,53 @@ export default async function handler(request: Request): Promise<Response> {
     return jsonResponse(400, "User messages must be non-empty and shorter than 2,000 characters.");
   }
 
+  const byokApiKey = parsed.data.byokApiKey?.trim();
+  const byokBaseUrl = parsed.data.byokBaseUrl?.trim();
+  const byokModelId = parsed.data.byokModelId?.trim();
+  const isByok = Boolean(byokApiKey);
+
+  if (isByok && byokBaseUrl && !/^https:\/\//i.test(byokBaseUrl)) {
+    return jsonResponse(400, "Custom API base URL must use HTTPS.");
+  }
+
   try {
+    const requiresReportSearch = shouldRequireReportSearch(messages, parsed.data.context);
+    const searchTool = {
+      [CHAT_SEARCH_TOOL_NAME]: {
+        description: [
+          "Search the user's browser-local Deana report findings.",
+          "Call this only when current chat/report context is insufficient for the user's request.",
+          "The browser executes this search locally and returns compact matched findings.",
+        ].join(" "),
+        inputSchema: chatSearchPlanSchema,
+      },
+    };
+
+    if (isByok) {
+      const openai = createOpenAI({
+        apiKey: byokApiKey,
+        ...(byokBaseUrl ? { baseURL: byokBaseUrl } : {}),
+      });
+      const model = byokModelId || "gpt-4o-mini";
+      const result = streamText({
+        model: openai(model),
+        system: buildSystemPrompt(parsed.data.context),
+        messages: await convertToModelMessages(messages),
+        tools: searchTool,
+        ...(requiresReportSearch ? { toolChoice: { type: "tool" as const, toolName: CHAT_SEARCH_TOOL_NAME } } : {}),
+        maxOutputTokens: MAX_ASSISTANT_OUTPUT_TOKENS,
+      });
+      return result.toUIMessageStreamResponse({
+        headers: { "Cache-Control": "no-store" },
+        messageMetadata: ({ part }) => {
+          const includesModelMetadata = part.type === "start" || part.type === "finish";
+          return includesModelMetadata ? { model } : undefined;
+        },
+        sendReasoning: true,
+        onError: () => "AI chat is unavailable. Check your API key and model ID in Settings.",
+      });
+    }
+
     const gateway = createGateway({
       apiKey: getGatewayApiKey(request, process.env),
     });
@@ -284,21 +334,11 @@ export default async function handler(request: Request): Promise<Response> {
     const model = requestedModel && allowedModels.includes(requestedModel)
       ? requestedModel
       : chatModelFromEnv(process.env);
-    const requiresReportSearch = shouldRequireReportSearch(messages, parsed.data.context);
     const result = streamText({
       model: gateway(model),
       system: buildSystemPrompt(parsed.data.context),
       messages: await convertToModelMessages(messages),
-      tools: {
-        [CHAT_SEARCH_TOOL_NAME]: {
-          description: [
-            "Search the user's browser-local Deana report findings.",
-            "Call this only when current chat/report context is insufficient for the user's request.",
-            "The browser executes this search locally and returns compact matched findings.",
-          ].join(" "),
-          inputSchema: chatSearchPlanSchema,
-        },
-      },
+      tools: searchTool,
       ...(requiresReportSearch ? { toolChoice: { type: "tool" as const, toolName: CHAT_SEARCH_TOOL_NAME } } : {}),
       maxOutputTokens: MAX_ASSISTANT_OUTPUT_TOKENS,
       providerOptions: buildGatewayProviderOptions(model, true),

@@ -262,6 +262,10 @@ export function ExplorerScreen({
     const s = loadSettings();
     return s.showReasoning !== false;
   });
+  const [byokEnabled, setByokEnabled] = useState<boolean>(() => loadSettings().byokEnabled ?? false);
+  const [byokApiKey, setByokApiKey] = useState<string>(() => loadSettings().byokApiKey ?? "");
+  const [byokBaseUrl, setByokBaseUrl] = useState<string>(() => loadSettings().byokBaseUrl ?? "");
+  const [byokModelId, setByokModelId] = useState<string>(() => loadSettings().byokModelId ?? "");
   const openSettings = useCallback(() => setIsSettingsOpen(true), []);
   const previousTabRef = useRef<ExplorerTab | null>(null);
 
@@ -407,6 +411,10 @@ export function ExplorerScreen({
           onPendingPromptConsumed={() => setPendingAiPrompt(null)}
           selectedModel={selectedModel}
           showReasoning={showReasoning}
+          byokEnabled={byokEnabled}
+          byokApiKey={byokApiKey}
+          byokBaseUrl={byokBaseUrl}
+          byokModelId={byokModelId}
           onOpenSettings={openSettings}
         />
       ) : tab === "ai" ? (
@@ -438,10 +446,18 @@ export function ExplorerScreen({
         selectedModel={selectedModel}
         availableModels={availableModels}
         showReasoning={showReasoning}
+        byokEnabled={byokEnabled}
+        byokApiKey={byokApiKey}
+        byokBaseUrl={byokBaseUrl}
+        byokModelId={byokModelId}
         onSave={(settings) => {
           saveSettings(settings);
           setSelectedModel(settings.modelId ?? availableModels[0] ?? "");
           setShowReasoning(settings.showReasoning !== false);
+          setByokEnabled(settings.byokEnabled ?? false);
+          setByokApiKey(settings.byokApiKey ?? "");
+          setByokBaseUrl(settings.byokBaseUrl ?? "");
+          setByokModelId(settings.byokModelId ?? "");
           setIsSettingsOpen(false);
         }}
         onClose={() => setIsSettingsOpen(false)}

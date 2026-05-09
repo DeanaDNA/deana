@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "@ai-sdk/gateway": "^3.0.104",
+    "@ai-sdk/openai": "^3.0.63",
     "@ai-sdk/react": "^3.0.170",
     "@vercel/analytics": "^2.0.1",
     "ai": "^6.0.168",
