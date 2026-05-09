@@ -7,8 +7,11 @@ import {
   MARKER_SORT_OPTIONS,
   MarkersExplorerContent,
   OverviewContent,
+  SettingsModal,
 } from "../components/deana/explorer";
 import { ExplorerAiChat } from "../components/deana/aiChat";
+import { availableModelsFromEnv } from "../lib/ai/models";
+import { loadSettings, saveSettings } from "../lib/settings";
 import {
   DEFAULT_FILTERS,
   ExplorerFilters,
@@ -238,6 +241,8 @@ function isEvidencePackStale(profile: ProfileMeta | null): boolean {
   );
 }
 
+const availableModels = availableModelsFromEnv(import.meta.env as Record<string, string | undefined>);
+
 export function ExplorerScreen({
   isLibraryReady,
 }: ExplorerScreenProps) {
@@ -248,6 +253,16 @@ export function ExplorerScreen({
   const [profile, setProfile] = useState<ProfileMeta | null>(null);
   const [isAiEnabled, setIsAiEnabled] = useState<boolean | null>(null);
   const [pendingAiPrompt, setPendingAiPrompt] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    const s = loadSettings();
+    return s.modelId && availableModels.includes(s.modelId) ? s.modelId : availableModels[0] ?? "";
+  });
+  const [showReasoning, setShowReasoning] = useState<boolean>(() => {
+    const s = loadSettings();
+    return s.showReasoning !== false;
+  });
+  const openSettings = useCallback(() => setIsSettingsOpen(true), []);
   const previousTabRef = useRef<ExplorerTab | null>(null);
 
   const filterKey = useMemo(() => filterSearchKey(searchParams), [searchParams]);
@@ -370,12 +385,14 @@ export function ExplorerScreen({
     : undefined;
 
   return (
+    <>
     <ExplorerShell
       report={toReportCard(profile)}
       activeTab={tab}
       isAiEnabled={isAiEnabled === true}
       onTabChange={setTab}
       onBackHome={() => navigate("/")}
+      onOpenSettings={openSettings}
     >
       {tab === "overview" ? (
         <OverviewContent profile={profile} onExploreCategory={setTab} />
@@ -388,6 +405,9 @@ export function ExplorerScreen({
           selectedEntry={null}
           pendingPrompt={pendingAiPrompt}
           onPendingPromptConsumed={() => setPendingAiPrompt(null)}
+          selectedModel={selectedModel}
+          showReasoning={showReasoning}
+          onOpenSettings={openSettings}
         />
       ) : tab === "ai" ? (
         <OverviewContent profile={profile} onExploreCategory={setTab} />
@@ -413,6 +433,21 @@ export function ExplorerScreen({
         />
       ) : null}
     </ExplorerShell>
+    {isSettingsOpen ? (
+      <SettingsModal
+        selectedModel={selectedModel}
+        availableModels={availableModels}
+        showReasoning={showReasoning}
+        onSave={(settings) => {
+          saveSettings(settings);
+          setSelectedModel(settings.modelId ?? availableModels[0] ?? "");
+          setShowReasoning(settings.showReasoning !== false);
+          setIsSettingsOpen(false);
+        }}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+    ) : null}
+    </>
   );
 }
 

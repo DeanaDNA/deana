@@ -513,6 +513,7 @@ export interface StoredChatThread {
   title: string;
   createdAt: string;
   updatedAt: string;
+  modelId?: string;
 }
 
 export interface StoredChatMessage {
@@ -526,6 +527,7 @@ export interface StoredChatMessage {
   contextFindings?: StoredChatContextFinding[];
   reasoningSummary?: string | null;
   followUps?: ChatFollowUpSuggestion[];
+  modelId?: string;
 }
 
 export interface ExplorerPage {

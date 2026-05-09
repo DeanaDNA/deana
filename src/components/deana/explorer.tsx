@@ -1,6 +1,8 @@
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type DependencyList, type ReactNode, type RefObject } from "react";
 import { SORT_FILTER_OPTIONS, type ExplorerFilters } from "../../lib/explorer";
 import type { ExplorerTab, InsightCategory, MarkerSort, ProfileMeta, ReportEntry, ReportFacets, StoredMarkerSummary, StoredReportEntry } from "../../types";
+import { modelDisplayName } from "../../lib/ai/models";
+import type { DeanaSettings } from "../../lib/settings";
 import { DEANA_GITHUB_URL, PrivacyModal, SupportDeanaModal } from "./marketing";
 import { DeanaWordmark, Icon, IconName } from "./ui";
 
@@ -64,6 +66,7 @@ export function ExplorerShell({
   children,
   onTabChange,
   onBackHome,
+  onOpenSettings,
 }: {
   report: ExplorerReportCard;
   activeTab: ExplorerTab;
@@ -71,9 +74,11 @@ export function ExplorerShell({
   children: ReactNode;
   onTabChange?: (tab: ExplorerTab) => void;
   onBackHome?: () => void;
+  onOpenSettings?: () => void;
 }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [modal, setModal] = useState<"privacy" | "help" | "support" | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const visibleNav = isAiEnabled ? nav : visibleNavWithoutAi;
   const visibleTabs = isAiEnabled ? tabs : visibleTabsWithoutAi;
 
@@ -107,6 +112,7 @@ export function ExplorerShell({
           <button onClick={onBackHome}><Icon name="upload" /> <span>Upload DNA</span></button>
           <button onClick={onBackHome}><Icon name="file" /> <span>Reports</span></button>
           <hr />
+          <button onClick={onOpenSettings}><Icon name="settings" /> <span>Settings</span></button>
           <button onClick={() => setModal("help")}><Icon name="help" /> <span>Help</span></button>
           <button onClick={() => setModal("support")}><Icon name="heart" /> <span>Support Deana</span></button>
         </nav>
@@ -128,8 +134,26 @@ export function ExplorerShell({
             </span>
           </button>
           <button className="dn-local-status" onClick={() => setModal("privacy")}><Icon name="shield" /> All analysis is local <i /></button>
-          <button className="dn-icon-button dn-show-mobile" aria-label="Support Deana" onClick={() => setModal("support")}><Icon name="heart" /></button>
           <button className="dn-icon-button dn-hide-mobile" aria-label="Help" onClick={() => setModal("help")}><Icon name="help" /></button>
+          <div className="dn-show-mobile" style={{ position: "relative" }}>
+            <button className="dn-icon-button" aria-label="Menu" aria-expanded={isMobileMenuOpen} onClick={() => setIsMobileMenuOpen((v) => !v)}>
+              <Icon name="menu" />
+            </button>
+            {isMobileMenuOpen ? <div className="dn-mobile-menu-backdrop" onClick={() => setIsMobileMenuOpen(false)} /> : null}
+            {isMobileMenuOpen ? (
+              <nav className="dn-mobile-menu" aria-label="Mobile menu">
+                <button onClick={() => { setIsMobileMenuOpen(false); onOpenSettings?.(); }}>
+                  <Icon name="settings" /> Settings
+                </button>
+                <button onClick={() => { setIsMobileMenuOpen(false); setModal("support"); }}>
+                  <Icon name="heart" /> Support Deana
+                </button>
+                <button onClick={() => { setIsMobileMenuOpen(false); setModal("help"); }}>
+                  <Icon name="help" /> Help
+                </button>
+              </nav>
+            ) : null}
+          </div>
         </header>
 
         <div className="dn-tabbar-wrap">
@@ -185,6 +209,70 @@ function HelpModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="dn-modal-actions">
           <button className="dn-button dn-button--primary" onClick={onClose}>Close</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export function SettingsModal({
+  selectedModel,
+  availableModels,
+  showReasoning,
+  onSave,
+  onClose,
+}: {
+  selectedModel: string;
+  availableModels: string[];
+  showReasoning: boolean;
+  onSave: (settings: DeanaSettings) => void;
+  onClose: () => void;
+}) {
+  const [pendingModel, setPendingModel] = useState(selectedModel);
+  const [pendingShowReasoning, setPendingShowReasoning] = useState(showReasoning);
+
+  return (
+    <div className="dn-modal-backdrop" role="presentation">
+      <section className="dn-modal dn-settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div className="dn-settings-modal__head">
+          <h1 id="settings-title" className="dn-settings-modal__title">Settings</h1>
+          <button className="dn-icon-button" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
+        </div>
+        <div className="dn-settings-section">
+          <label className="dn-settings-label" htmlFor="settings-model-select">AI Model</label>
+          <p className="dn-settings-description">Choose the AI model used for chat. Settings are saved locally in this browser.</p>
+          <div className="dn-field dn-field--select dn-settings-field">
+            <div className="dn-select-control">
+              <select
+                id="settings-model-select"
+                value={pendingModel}
+                onChange={(e) => setPendingModel(e.target.value)}
+              >
+                {availableModels.map((modelId) => (
+                  <option key={modelId} value={modelId}>{modelDisplayName(modelId)}</option>
+                ))}
+              </select>
+              <Icon name="chevronDown" size={18} />
+            </div>
+          </div>
+        </div>
+        <div className="dn-settings-toggle-row">
+          <label className="dn-settings-label" htmlFor="settings-reasoning-toggle">Show model reasoning</label>
+          <p className="dn-settings-description">Display the model's thinking process before each response.</p>
+          <label className="dn-filter-check" htmlFor="settings-reasoning-toggle">
+            <input
+              id="settings-reasoning-toggle"
+              className="dn-filter-check__input"
+              type="checkbox"
+              checked={pendingShowReasoning}
+              onChange={(e) => setPendingShowReasoning(e.target.checked)}
+            />
+            <span className="dn-filter-check__label">Show reasoning</span>
+          </label>
+        </div>
+        <div className="dn-modal-actions">
+          <button className="dn-button dn-button--secondary" type="button" onClick={onClose}>Cancel</button>
+          <button className="dn-button dn-button--primary" type="button" onClick={() => onSave({ modelId: pendingModel, showReasoning: pendingShowReasoning })}>Save</button>
         </div>
       </section>
     </div>

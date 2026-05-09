@@ -35,6 +35,7 @@ import {
 } from "../../lib/storage";
 import { loadMarkerSummary } from "../../lib/ai/searchIndex";
 import type { ChatRetrievalTrace, ChatSearchPlan, ExplorerTab, ProfileMeta, StoredChatMessage, StoredChatThread, StoredMarkerSummary, StoredReportEntry } from "../../types";
+import { modelDisplayName } from "../../lib/ai/models";
 import { FindingInspector, MarkerInspector } from "./explorer";
 import { Icon } from "./ui";
 
@@ -46,6 +47,9 @@ interface ExplorerAiChatProps {
   selectedEntry: StoredReportEntry | null;
   pendingPrompt?: string | null;
   onPendingPromptConsumed?: () => void;
+  selectedModel?: string;
+  showReasoning?: boolean;
+  onOpenSettings?: () => void;
 }
 
 const markdownSchema = {
@@ -81,7 +85,6 @@ const entryLinkPattern = new RegExp(`${entryLinkPrefix.replace(/[.*+?^${}()|[\]\
 const markerLinkPrefix = "deana://marker/";
 const markerLinkPattern = new RegExp(`${markerLinkPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}rs\\d+`, "gi");
 const deanaLinkPattern = new RegExp(`${entryLinkPattern.source}|${markerLinkPattern.source}`, "gi");
-const showDebugModelName = import.meta.env.DEV;
 const noSavedReportFindingsMessage = "No saved report findings matched this local browser search.";
 const compactAiLayoutQuery = "(max-width: 980px)";
 
@@ -189,14 +192,10 @@ function toUiMessages(messages: StoredChatMessage[]): UIMessage[] {
     id: message.id,
     role: message.role,
     parts: [{ type: "text", text: message.content }],
+    metadata: message.modelId ? { model: message.modelId } : undefined,
   }));
 }
 
-function threadTitleFromPrompt(prompt: string): string {
-  const title = prompt.replace(/\s+/g, " ").trim();
-  if (!title) return "New chat";
-  return title.length > 52 ? `${title.slice(0, 49)}...` : title;
-}
 
 async function generateThreadTitle(prompt: string): Promise<string | null> {
   const response = await fetch("/api/chat-title", {
@@ -546,7 +545,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
     return {
       id: makeId("thread"),
       profileId: props.profile.id,
-      title: prompt ? threadTitleFromPrompt(prompt) : "New chat",
+      title: formatChatTitle(prompt ?? "") || "New chat",
       createdAt: now,
       updatedAt: now,
     };
@@ -602,8 +601,9 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
     const now = new Date().toISOString();
     const fallbackThread = {
       ...thread,
-      title: threadTitleFromPrompt(prompt),
+      title: formatChatTitle(prompt) || "New chat",
       updatedAt: now,
+      modelId: latestPropsRef.current.selectedModel,
     };
     activeThreadRef.current = fallbackThread;
     setActiveThread(fallbackThread);
@@ -703,6 +703,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
           contextFindings,
           reasoningSummary: message.id === assistantMessage?.id ? assistantReasoning : null,
           followUps,
+          modelId: message.role === "assistant" ? (messageModel(message) ?? undefined) : undefined,
         };
       });
   }
@@ -720,6 +721,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
           },
           context: buildChatContext({ ...latestPropsRef.current, retrievedFindings: latestFindingsRef.current }),
           messages: compactChatMessagesForRequest(messages),
+          model: latestPropsRef.current.selectedModel,
         },
       };
     },
@@ -781,6 +783,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
       const nextThread = {
         ...thread,
         updatedAt: now,
+        modelId: latestPropsRef.current.selectedModel,
       };
       await saveChatThread(nextThread);
       isActiveThreadSavedRef.current = true;
@@ -1078,6 +1081,9 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
         </a>
       );
     },
+    table({ children }) {
+      return <div className="dn-ai-table-scroll"><table>{children}</table></div>;
+    },
     text({ children }) {
       const value = String(children);
       const nodes: Array<string | JSX.Element> = [];
@@ -1188,20 +1194,31 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
                   </span>
                   <h2>Ask Deana about this report</h2>
                   <p>Deana can answer from the current report context and search saved findings when it needs more detail.</p>
+                  <div className="dn-ai-model-indicator">
+                    <Icon name="settings" size={14} />
+                    <span>Using {modelDisplayName(props.selectedModel ?? "")}</span>
+                    {props.onOpenSettings ? (
+                      <button type="button" className="dn-ai-model-indicator__change" onClick={props.onOpenSettings}>
+                        Change
+                      </button>
+                    ) : null}
+                  </div>
                   <button className="dn-button dn-button--secondary" type="button" onClick={() => setModal("chatPrivacy")}>
                     Learn more
                   </button>
                 </div>
               ) : null}
-              {messages.map((message) => (
+              {messages.map((message, index) => (
                 <ChatMessage
                   key={message.id}
                   role={message.role}
                   content={displayTextForMessage(message)}
-                  modelName={showDebugModelName ? messageModel(message) : null}
+                  modelName={messageModel(message)}
                   trace={traceByMessageRef.current[message.id]}
                   interpretedFindingCount={contextFindingsByMessageRef.current[message.id]?.length}
                   reasoningSummary={messageReasoning(message) ?? reasoningByMessageRef.current[message.id] ?? null}
+                  showReasoning={props.showReasoning !== false}
+                  isStreamingReasoning={isBusy && index === messages.length - 1}
                   entryTitleById={entryTitleById}
                   components={markdownComponents}
                   onOpenEntry={handleOpenEntry}
@@ -1408,7 +1425,10 @@ function ThreadList({
           <div className={`dn-ai-thread ${thread.id === activeThreadId ? "is-active" : ""}`} key={thread.id}>
             <button type="button" onClick={() => onSelect(thread)}>
               <strong>{thread.title}</strong>
-              <span>{new Date(thread.updatedAt).toLocaleDateString()}</span>
+              <span>
+                {thread.modelId ? `${modelDisplayName(thread.modelId)} · ` : ""}
+                {new Date(thread.updatedAt).toLocaleDateString()}
+              </span>
             </button>
             <button className="dn-icon-button dn-ai-thread__delete" type="button" aria-label={`Delete chat ${thread.title}`} onClick={() => onDelete(thread)}>
               <Icon name="trash" />
@@ -1688,6 +1708,8 @@ const ChatMessage = memo(function ChatMessage({
   trace,
   interpretedFindingCount,
   reasoningSummary,
+  showReasoning,
+  isStreamingReasoning,
   entryTitleById,
   components,
   onOpenEntry,
@@ -1699,6 +1721,8 @@ const ChatMessage = memo(function ChatMessage({
   trace?: ChatRetrievalTrace;
   interpretedFindingCount?: number;
   reasoningSummary: string | null;
+  showReasoning: boolean;
+  isStreamingReasoning: boolean;
   entryTitleById: Map<string, string>;
   components: Components;
   onOpenEntry: (entryId: string) => void;
@@ -1711,8 +1735,8 @@ const ChatMessage = memo(function ChatMessage({
 
   return (
     <article className={`dn-ai-message dn-ai-message--${role}`}>
-      {showDebugModelName && role === "assistant" && modelName ? <p className="dn-ai-model-name">Model: {modelName}</p> : null}
-      {hasReasoning && role === "assistant" ? <ModelReasoning reasoning={reasoningSummary ?? ""} /> : null}
+      {role === "assistant" && modelName ? <p className="dn-ai-model-name">{modelDisplayName(modelName)}</p> : null}
+      {hasReasoning && role === "assistant" && showReasoning ? <ModelReasoning reasoning={reasoningSummary ?? ""} isStreaming={isStreamingReasoning} /> : null}
       {content ? (
         <ReactMarkdown
           remarkPlugins={remarkPlugins}
@@ -1730,14 +1754,24 @@ const ChatMessage = memo(function ChatMessage({
   );
 });
 
-function ModelReasoning({ reasoning }: { reasoning: string }) {
+function ModelReasoning({ reasoning, isStreaming }: { reasoning: string; isStreaming: boolean }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
-    <details className="dn-ai-trace dn-ai-trace--reasoning" open>
-      <summary><Icon name="spark" /> Model reasoning</summary>
-      <div className="dn-ai-trace__body">
-        <p>{reasoning}</p>
+    <div className={`dn-ai-trace dn-ai-trace--reasoning${isExpanded ? " is-expanded" : ""}`}>
+      <div className="dn-ai-trace--reasoning__head">
+        <span className="dn-ai-trace--reasoning__label">
+          <Icon name="spark" /> {isStreaming ? "Thinking…" : "Thought Process"}
+        </span>
+        <button type="button" className="dn-ai-reasoning-toggle" onClick={() => setIsExpanded((v) => !v)}>
+          {isExpanded ? "Hide" : "Show"}
+        </button>
       </div>
-    </details>
+      <div className="dn-ai-trace--reasoning__body">
+        <p>{reasoning}</p>
+        {!isExpanded ? <div className="dn-ai-trace--reasoning__fade" aria-hidden="true" /> : null}
+      </div>
+    </div>
   );
 }
 
