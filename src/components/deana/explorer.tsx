@@ -235,8 +235,10 @@ export function SettingsModal({
   return (
     <div className="dn-modal-backdrop" role="presentation">
       <section className="dn-modal dn-settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-        <button className="dn-icon-button dn-modal-close" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
-        <h1 id="settings-title">Settings</h1>
+        <div className="dn-settings-modal__head">
+          <h1 id="settings-title" className="dn-settings-modal__title">Settings</h1>
+          <button className="dn-icon-button" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
+        </div>
         <div className="dn-settings-section">
           <label className="dn-settings-label" htmlFor="settings-model-select">AI Model</label>
           <p className="dn-settings-description">Choose the AI model used for chat. Settings are saved locally in this browser.</p>

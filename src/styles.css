@@ -379,6 +379,8 @@ a { color: inherit; }
 .dn-confirm-modal { max-width: 520px; text-align: center; }
 .dn-confirm-modal > .dn-round-icon { margin: 0 auto; background: var(--dn-danger-bg); color: var(--dn-clay-dark); }
 .dn-settings-modal { max-width: 500px; }
+.dn-settings-modal__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.dn-settings-modal__title { font-family: var(--dn-font-display); font-size: 2rem; font-weight: 500; color: var(--dn-forest); line-height: 1; margin: 0; }
 .dn-settings-section { display: grid; gap: 8px; margin-top: 8px; }
 .dn-settings-toggle-row { display: grid; gap: 8px; margin-top: 16px; border-top: 1px solid var(--dn-line); padding-top: 16px; }
 .dn-settings-label { font-weight: 600; color: var(--dn-forest); font-size: 0.95rem; }
