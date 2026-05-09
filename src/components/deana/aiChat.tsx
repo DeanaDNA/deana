@@ -603,11 +603,12 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
 
   function startThreadTitleFromFirstPrompt(thread: StoredChatThread, prompt: string): StoredChatThread {
     const now = new Date().toISOString();
+    const p = latestPropsRef.current;
     const fallbackThread = {
       ...thread,
       title: formatChatTitle(prompt) || "New chat",
       updatedAt: now,
-      modelId: latestPropsRef.current.selectedModel,
+      modelId: p.byokEnabled && p.byokApiKey ? (p.byokModelId || "gpt-4o-mini") : p.selectedModel,
     };
     activeThreadRef.current = fallbackThread;
     setActiveThread(fallbackThread);
@@ -793,10 +794,11 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
       if (!thread) return;
       if (message.role === "assistant" && hasToolPart(message) && !displayMessageText(message).trim()) return;
       const now = new Date().toISOString();
+      const p = latestPropsRef.current;
       const nextThread = {
         ...thread,
         updatedAt: now,
-        modelId: latestPropsRef.current.selectedModel,
+        modelId: p.byokEnabled && p.byokApiKey ? (p.byokModelId || "gpt-4o-mini") : p.selectedModel,
       };
       await saveChatThread(nextThread);
       isActiveThreadSavedRef.current = true;
@@ -1209,7 +1211,11 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
                   <p>Deana can answer from the current report context and search saved findings when it needs more detail.</p>
                   <div className="dn-ai-model-indicator">
                     <Icon name="settings" size={14} />
-                    <span>Using {modelDisplayName(props.selectedModel ?? "")}</span>
+                    <span>Using {modelDisplayName(
+                      props.byokEnabled && props.byokApiKey
+                        ? (props.byokModelId || "gpt-4o-mini")
+                        : (props.selectedModel ?? "")
+                    )}</span>
                     {props.onOpenSettings ? (
                       <button type="button" className="dn-ai-model-indicator__change" onClick={props.onOpenSettings}>
                         Change
