@@ -380,10 +380,13 @@ a { color: inherit; }
 .dn-confirm-modal > .dn-round-icon { margin: 0 auto; background: var(--dn-danger-bg); color: var(--dn-clay-dark); }
 .dn-settings-modal { max-width: 500px; }
 .dn-settings-section { display: grid; gap: 8px; margin-top: 8px; }
+.dn-settings-toggle-row { display: grid; gap: 8px; margin-top: 16px; border-top: 1px solid var(--dn-line); padding-top: 16px; }
 .dn-settings-label { font-weight: 600; color: var(--dn-forest); font-size: 0.95rem; }
 .dn-settings-description { margin: 0; color: var(--dn-muted); font-size: 0.9rem; line-height: 1.5; }
 .dn-settings-select { width: 100%; padding: 10px 14px; border: 1px solid var(--dn-line-strong); border-radius: 10px; background: var(--dn-paper); color: var(--dn-forest); font-size: 1rem; appearance: auto; }
 .dn-settings-select:focus { outline: 2px solid var(--dn-forest); outline-offset: 2px; }
+.dn-settings-toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: var(--dn-forest); font-size: 0.95rem; font-weight: 500; }
+.dn-settings-toggle input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--dn-forest-2); cursor: pointer; }
 .dn-mobile-menu-backdrop { position: fixed; inset: 0; z-index: 38; }
 .dn-mobile-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 39; min-width: 180px; background: var(--dn-paper); border: 1px solid var(--dn-line); border-radius: 14px; box-shadow: var(--dn-shadow); padding: 6px; display: flex; flex-direction: column; gap: 2px; }
 .dn-mobile-menu button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 8px 14px; background: transparent; border-radius: 10px; color: var(--dn-forest); font-size: 0.95rem; text-align: left; }
@@ -1159,6 +1162,19 @@ a { color: inherit; }
   margin-top: 10px;
   color: var(--dn-muted);
   font-size: 0.9rem;
+}
+.dn-ai-trace--reasoning {
+  border-top: none;
+  background: var(--dn-mint);
+  border: 1px solid var(--dn-eucalyptus);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.dn-ai-trace--reasoning summary {
+  color: var(--dn-forest);
+}
+.dn-ai-trace--reasoning .dn-ai-trace__body {
+  color: var(--dn-forest-2);
 }
 .dn-ai-trace__body p { margin: 0; }
 .dn-ai-trace__body dl {

@@ -219,15 +219,18 @@ function HelpModal({ onClose }: { onClose: () => void }) {
 export function SettingsModal({
   selectedModel,
   availableModels,
+  showReasoning,
   onSave,
   onClose,
 }: {
   selectedModel: string;
   availableModels: string[];
-  onSave: (modelId: string) => void;
+  showReasoning: boolean;
+  onSave: (modelId: string, showReasoning: boolean) => void;
   onClose: () => void;
 }) {
   const [pendingModel, setPendingModel] = useState(selectedModel);
+  const [pendingShowReasoning, setPendingShowReasoning] = useState(showReasoning);
 
   return (
     <div className="dn-modal-backdrop" role="presentation">
@@ -249,9 +252,22 @@ export function SettingsModal({
             ))}
           </select>
         </div>
+        <div className="dn-settings-toggle-row">
+          <label className="dn-settings-label" htmlFor="settings-reasoning-toggle">Show model reasoning</label>
+          <p className="dn-settings-description">Display the model's thinking process before each response.</p>
+          <label className="dn-settings-toggle">
+            <input
+              id="settings-reasoning-toggle"
+              type="checkbox"
+              checked={pendingShowReasoning}
+              onChange={(e) => setPendingShowReasoning(e.target.checked)}
+            />
+            <span>Show reasoning</span>
+          </label>
+        </div>
         <div className="dn-modal-actions">
           <button className="dn-button dn-button--secondary" type="button" onClick={onClose}>Cancel</button>
-          <button className="dn-button dn-button--primary" type="button" onClick={() => onSave(pendingModel)}>Save</button>
+          <button className="dn-button dn-button--primary" type="button" onClick={() => onSave(pendingModel, pendingShowReasoning)}>Save</button>
         </div>
       </section>
     </div>

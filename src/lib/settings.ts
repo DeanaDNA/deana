@@ -2,6 +2,7 @@ const SETTINGS_KEY = "deana-settings";
 
 export interface DeanaSettings {
   modelId?: string;
+  showReasoning?: boolean;
 }
 
 export function loadSettings(): DeanaSettings {

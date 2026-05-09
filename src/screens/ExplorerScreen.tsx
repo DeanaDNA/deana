@@ -258,6 +258,10 @@ export function ExplorerScreen({
     const s = loadSettings();
     return s.modelId && availableModels.includes(s.modelId) ? s.modelId : availableModels[0] ?? "";
   });
+  const [showReasoning, setShowReasoning] = useState<boolean>(() => {
+    const s = loadSettings();
+    return s.showReasoning !== false;
+  });
   const openSettings = useCallback(() => setIsSettingsOpen(true), []);
   const previousTabRef = useRef<ExplorerTab | null>(null);
 
@@ -403,6 +407,7 @@ export function ExplorerScreen({
           onPendingPromptConsumed={() => setPendingAiPrompt(null)}
           selectedModel={selectedModel}
           availableModels={availableModels}
+          showReasoning={showReasoning}
           onOpenSettings={openSettings}
         />
       ) : tab === "ai" ? (
@@ -433,7 +438,13 @@ export function ExplorerScreen({
       <SettingsModal
         selectedModel={selectedModel}
         availableModels={availableModels}
-        onSave={(modelId) => { saveSettings({ modelId }); setSelectedModel(modelId); setIsSettingsOpen(false); }}
+        showReasoning={showReasoning}
+        onSave={(modelId, nextShowReasoning) => {
+          saveSettings({ modelId, showReasoning: nextShowReasoning });
+          setSelectedModel(modelId);
+          setShowReasoning(nextShowReasoning);
+          setIsSettingsOpen(false);
+        }}
         onClose={() => setIsSettingsOpen(false)}
       />
     ) : null}

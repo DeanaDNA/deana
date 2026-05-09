@@ -12,6 +12,7 @@ export const CHAT_SEARCH_TOOL_PART_TYPE = `tool-${CHAT_SEARCH_TOOL_NAME}`;
 const MAX_CHAT_FOLLOW_UP_TITLE_LENGTH = 44;
 const MAX_CHAT_FOLLOW_UP_BODY_LENGTH = 220;
 const openAiReasoningModelPattern = /^openai\/(?:gpt-5(?:[.-]|$)|o[1-9](?:[.-]|$))/;
+const deepSeekReasoningModelPattern = /^deepseek\/deepseek-(?:r\d|v\d.*-pro)/;
 
 export interface ChatConsent {
   accepted: true;
@@ -113,9 +114,10 @@ export function extractChatFollowUps(content: string): { content: string; follow
 export function buildGatewayProviderOptions(model: string, includeThoughts = false) {
   const isGeminiGatewayModel = model.startsWith("google/gemini-");
   const isOpenAiReasoningGatewayModel = openAiReasoningModelPattern.test(model);
+  const isDeepSeekReasoningModel = deepSeekReasoningModelPattern.test(model);
 
   return {
-    // Gemma routes use only gateway privacy flags; no Gemini/OpenAI provider options.
+    // Gemma routes use only gateway privacy flags; no Gemini/OpenAI/DeepSeek provider options.
     ...(isGeminiGatewayModel
       ? {
           google: {
@@ -128,6 +130,13 @@ export function buildGatewayProviderOptions(model: string, includeThoughts = fal
       ? {
           openai: {
             reasoningEffort: "low",
+          },
+        }
+      : {}),
+    ...(isDeepSeekReasoningModel
+      ? {
+          deepseek: {
+            thinkingBudgetTokens: 1000,
           },
         }
       : {}),

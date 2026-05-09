@@ -49,6 +49,7 @@ interface ExplorerAiChatProps {
   onPendingPromptConsumed?: () => void;
   selectedModel?: string;
   availableModels?: string[];
+  showReasoning?: boolean;
   onOpenSettings?: () => void;
 }
 
@@ -1215,6 +1216,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
                   trace={traceByMessageRef.current[message.id]}
                   interpretedFindingCount={contextFindingsByMessageRef.current[message.id]?.length}
                   reasoningSummary={messageReasoning(message) ?? reasoningByMessageRef.current[message.id] ?? null}
+                  showReasoning={props.showReasoning !== false}
                   entryTitleById={entryTitleById}
                   components={markdownComponents}
                   onOpenEntry={handleOpenEntry}
@@ -1701,6 +1703,7 @@ const ChatMessage = memo(function ChatMessage({
   trace,
   interpretedFindingCount,
   reasoningSummary,
+  showReasoning,
   entryTitleById,
   components,
   onOpenEntry,
@@ -1712,6 +1715,7 @@ const ChatMessage = memo(function ChatMessage({
   trace?: ChatRetrievalTrace;
   interpretedFindingCount?: number;
   reasoningSummary: string | null;
+  showReasoning: boolean;
   entryTitleById: Map<string, string>;
   components: Components;
   onOpenEntry: (entryId: string) => void;
@@ -1725,7 +1729,7 @@ const ChatMessage = memo(function ChatMessage({
   return (
     <article className={`dn-ai-message dn-ai-message--${role}`}>
       {role === "assistant" && modelName ? <p className="dn-ai-model-name">{modelDisplayName(modelName)}</p> : null}
-      {hasReasoning && role === "assistant" ? <ModelReasoning reasoning={reasoningSummary ?? ""} /> : null}
+      {hasReasoning && role === "assistant" && showReasoning ? <ModelReasoning reasoning={reasoningSummary ?? ""} /> : null}
       {content ? (
         <ReactMarkdown
           remarkPlugins={remarkPlugins}
@@ -1745,8 +1749,8 @@ const ChatMessage = memo(function ChatMessage({
 
 function ModelReasoning({ reasoning }: { reasoning: string }) {
   return (
-    <details className="dn-ai-trace dn-ai-trace--reasoning" open>
-      <summary><Icon name="spark" /> Model reasoning</summary>
+    <details className="dn-ai-trace dn-ai-trace--reasoning">
+      <summary><Icon name="spark" /> Thinking</summary>
       <div className="dn-ai-trace__body">
         <p>{reasoning}</p>
       </div>
