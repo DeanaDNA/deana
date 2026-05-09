@@ -192,6 +192,7 @@ function toUiMessages(messages: StoredChatMessage[]): UIMessage[] {
     id: message.id,
     role: message.role,
     parts: [{ type: "text", text: message.content }],
+    metadata: message.modelId ? { model: message.modelId } : undefined,
   }));
 }
 
@@ -702,6 +703,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
           contextFindings,
           reasoningSummary: message.id === assistantMessage?.id ? assistantReasoning : null,
           followUps,
+          modelId: message.role === "assistant" ? (messageModel(message) ?? undefined) : undefined,
         };
       });
   }

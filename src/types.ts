@@ -527,6 +527,7 @@ export interface StoredChatMessage {
   contextFindings?: StoredChatContextFinding[];
   reasoningSummary?: string | null;
   followUps?: ChatFollowUpSuggestion[];
+  modelId?: string;
 }
 
 export interface ExplorerPage {
