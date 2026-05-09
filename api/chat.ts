@@ -322,7 +322,7 @@ export default async function handler(request: Request): Promise<Response> {
           return includesModelMetadata ? { model } : undefined;
         },
         sendReasoning: true,
-        onError: () => "AI chat is unavailable. Check your API key and model ID in Settings.",
+        onError: (error) => error instanceof Error ? error.message : "AI chat is unavailable. Check your API key and model ID in Settings.",
       });
     }
 
@@ -355,7 +355,11 @@ export default async function handler(request: Request): Promise<Response> {
       sendReasoning: true,
       onError: () => "AI chat is unavailable with the current Gateway privacy settings.",
     });
-  } catch {
+  } catch (err) {
+    if (isByok) {
+      const msg = err instanceof Error ? err.message : undefined;
+      return jsonResponse(503, msg || "AI chat is unavailable. Check your API key and model ID in Settings.");
+    }
     return jsonResponse(503, "AI chat is unavailable with the current Gateway privacy settings.");
   }
 }
