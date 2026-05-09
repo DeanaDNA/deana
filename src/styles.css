@@ -383,6 +383,8 @@ a { color: inherit; }
 .dn-settings-modal__title { font-family: var(--dn-font-display); font-size: 1.6rem; font-weight: 500; color: var(--dn-forest); line-height: 1; margin: 0; }
 .dn-settings-section { display: grid; gap: 6px; }
 .dn-settings-toggle-row { display: grid; gap: 6px; margin-top: 16px; border-top: 1px solid var(--dn-line); padding-top: 16px; }
+.dn-settings-toggle-row .dn-filter-check { align-items: center; }
+.dn-settings-toggle-row .dn-filter-check__input { margin-top: 0; }
 .dn-settings-label { font-weight: 600; color: var(--dn-forest); font-size: 0.88rem; }
 .dn-settings-description { margin: 0; color: var(--dn-muted); font-size: 0.85rem; line-height: 1.5; }
 .dn-settings-field { margin-top: 4px; }
