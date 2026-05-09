@@ -241,28 +241,33 @@ export function SettingsModal({
         <div className="dn-settings-section">
           <label className="dn-settings-label" htmlFor="settings-model-select">AI Model</label>
           <p className="dn-settings-description">Choose the AI model used for chat. Settings are saved locally in this browser.</p>
-          <select
-            id="settings-model-select"
-            className="dn-settings-select"
-            value={pendingModel}
-            onChange={(e) => setPendingModel(e.target.value)}
-          >
-            {availableModels.map((modelId) => (
-              <option key={modelId} value={modelId}>{modelDisplayName(modelId)}</option>
-            ))}
-          </select>
+          <div className="dn-field dn-field--select dn-settings-field">
+            <div className="dn-select-control">
+              <select
+                id="settings-model-select"
+                value={pendingModel}
+                onChange={(e) => setPendingModel(e.target.value)}
+              >
+                {availableModels.map((modelId) => (
+                  <option key={modelId} value={modelId}>{modelDisplayName(modelId)}</option>
+                ))}
+              </select>
+              <Icon name="chevronDown" size={18} />
+            </div>
+          </div>
         </div>
         <div className="dn-settings-toggle-row">
           <label className="dn-settings-label" htmlFor="settings-reasoning-toggle">Show model reasoning</label>
           <p className="dn-settings-description">Display the model's thinking process before each response.</p>
-          <label className="dn-settings-toggle">
+          <label className="dn-filter-check" htmlFor="settings-reasoning-toggle">
             <input
               id="settings-reasoning-toggle"
+              className="dn-filter-check__input"
               type="checkbox"
               checked={pendingShowReasoning}
               onChange={(e) => setPendingShowReasoning(e.target.checked)}
             />
-            <span>Show reasoning</span>
+            <span className="dn-filter-check__label">Show reasoning</span>
           </label>
         </div>
         <div className="dn-modal-actions">
