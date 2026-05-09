@@ -1,6 +1,6 @@
 import { createGateway } from "@ai-sdk/gateway";
 import { createOpenAI } from "@ai-sdk/openai";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { convertToModelMessages, extractReasoningMiddleware, streamText, type UIMessage, wrapLanguageModel } from "ai";
 import { z } from "zod";
 import { getGatewayApiKey, isSameOrigin } from "../src/lib/aiGatewayAuth.js";
 import {
@@ -8,6 +8,7 @@ import {
   CHAT_CONSENT_VERSION,
   CHAT_CONTEXT_VERSION,
   CHAT_SEARCH_TOOL_NAME,
+  MAX_BYOK_CONTEXT_FINDINGS,
   MAX_CHAT_CONTEXT_FINDINGS,
 } from "../src/lib/aiChat.js";
 import { availableModelsFromEnv, chatModelFromEnv } from "../src/lib/ai/models.js";
@@ -127,7 +128,7 @@ const chatContextSchema = z.object({
     })).max(4),
   }),
   selectedFindingId: z.string().max(200).nullable(),
-  findings: z.array(findingSchema).max(MAX_CHAT_CONTEXT_FINDINGS),
+  findings: z.array(findingSchema).max(MAX_BYOK_CONTEXT_FINDINGS),
 });
 
 const chatRequestSchema = z.object({
@@ -194,11 +195,11 @@ function textFromMessage(message: UIMessage): string {
     .trim();
 }
 
-function validateUserText(messages: UIMessage[]): boolean {
+function validateUserText(messages: UIMessage[], maxLength = MAX_USER_TEXT_LENGTH): boolean {
   return messages.every((message) => {
     if (message.role !== "user") return true;
     const text = textFromMessage(message);
-    return text.length > 0 && text.length <= MAX_USER_TEXT_LENGTH;
+    return text.length > 0 && text.length <= maxLength;
   });
 }
 
@@ -275,14 +276,14 @@ export default async function handler(request: Request): Promise<Response> {
   }
 
   const messages = parsed.data.messages as UIMessage[];
-  if (!validateUserText(messages)) {
-    return jsonResponse(400, "User messages must be non-empty and shorter than 2,000 characters.");
-  }
-
   const byokApiKey = parsed.data.byokApiKey?.trim();
   const byokBaseUrl = parsed.data.byokBaseUrl?.trim();
   const byokModelId = parsed.data.byokModelId?.trim();
   const isByok = Boolean(byokApiKey);
+
+  if (!validateUserText(messages, isByok ? Number.MAX_SAFE_INTEGER : MAX_USER_TEXT_LENGTH)) {
+    return jsonResponse(400, "User messages must be non-empty and shorter than 2,000 characters.");
+  }
 
   if (isByok && byokBaseUrl && !/^https:\/\//i.test(byokBaseUrl)) {
     return jsonResponse(400, "Custom API base URL must use HTTPS.");
@@ -302,18 +303,21 @@ export default async function handler(request: Request): Promise<Response> {
     };
 
     if (isByok) {
-      const openai = createOpenAI({
+      const openaiProvider = createOpenAI({
         apiKey: byokApiKey,
         ...(byokBaseUrl ? { baseURL: byokBaseUrl } : {}),
       });
       const model = byokModelId || "gpt-4o-mini";
+      const byokModel = wrapLanguageModel({
+        model: openaiProvider.chat(model),
+        middleware: extractReasoningMiddleware({ tagName: "think" }),
+      });
       const result = streamText({
-        model: openai(model),
+        model: byokModel,
         system: buildSystemPrompt(parsed.data.context),
         messages: await convertToModelMessages(messages),
         tools: searchTool,
         ...(requiresReportSearch ? { toolChoice: { type: "tool" as const, toolName: CHAT_SEARCH_TOOL_NAME } } : {}),
-        maxOutputTokens: MAX_ASSISTANT_OUTPUT_TOKENS,
       });
       return result.toUIMessageStreamResponse({
         headers: { "Cache-Control": "no-store" },

@@ -5,6 +5,7 @@ export type { ChatFollowUpSuggestion, ChatSearchPlan } from "../types.js";
 export const CHAT_CONTEXT_VERSION = 1;
 export const CHAT_CONSENT_VERSION = 1;
 export const MAX_CHAT_CONTEXT_FINDINGS = 18;
+export const MAX_BYOK_CONTEXT_FINDINGS = 50;
 export const MAX_CHAT_SEARCH_RESULTS = 8;
 export const MAX_CHAT_FOLLOW_UPS = 3;
 export const CHAT_SEARCH_TOOL_NAME = "searchReportFindings";
@@ -186,6 +187,7 @@ interface BuildChatContextOptions {
   visibleEntries: StoredReportEntry[];
   selectedEntry: StoredReportEntry | null;
   retrievedFindings?: ChatContextFinding[];
+  maxFindings?: number;
 }
 
 function compactText(value: string, maxLength: number): string {
@@ -247,23 +249,23 @@ export function findingToChatContext(entry: StoredReportEntry): ChatContextFindi
   };
 }
 
-function rankedEntries(selectedEntry: StoredReportEntry | null, visibleEntries: StoredReportEntry[]): StoredReportEntry[] {
+function rankedEntries(selectedEntry: StoredReportEntry | null, visibleEntries: StoredReportEntry[], maxFindings: number): StoredReportEntry[] {
   const entries = selectedEntry ? [selectedEntry, ...visibleEntries] : visibleEntries;
   const seen = new Set<string>();
   return entries.filter((entry) => {
     if (seen.has(entry.id)) return false;
     seen.add(entry.id);
     return true;
-  }).slice(0, MAX_CHAT_CONTEXT_FINDINGS);
+  }).slice(0, maxFindings);
 }
 
-export function mergeChatFindings(findings: ChatContextFinding[]): ChatContextFinding[] {
+export function mergeChatFindings(findings: ChatContextFinding[], maxFindings = MAX_CHAT_CONTEXT_FINDINGS): ChatContextFinding[] {
   const seen = new Set<string>();
   return findings.filter((finding) => {
     if (seen.has(finding.id)) return false;
     seen.add(finding.id);
     return true;
-  }).slice(0, MAX_CHAT_CONTEXT_FINDINGS);
+  }).slice(0, maxFindings);
 }
 
 export function buildChatContext({
@@ -273,8 +275,9 @@ export function buildChatContext({
   visibleEntries,
   selectedEntry,
   retrievedFindings,
+  maxFindings = MAX_CHAT_CONTEXT_FINDINGS,
 }: BuildChatContextOptions): ChatReportContext {
-  const currentFindings = rankedEntries(selectedEntry, visibleEntries).map(findingToChatContext);
+  const currentFindings = rankedEntries(selectedEntry, visibleEntries, maxFindings).map(findingToChatContext);
 
   return {
     contextVersion: CHAT_CONTEXT_VERSION,
@@ -311,6 +314,6 @@ export function buildChatContext({
     findings: mergeChatFindings([
       ...currentFindings,
       ...(retrievedFindings ?? []),
-    ]),
+    ], maxFindings),
   };
 }
