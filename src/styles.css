@@ -961,18 +961,19 @@ a { color: inherit; }
 .dn-ai-message p:last-child,
 .dn-ai-message ul:last-child,
 .dn-ai-message ol:last-child { margin-bottom: 0; }
-.dn-ai-message table { display: block; width: max-content; max-width: 100%; overflow-x: auto; margin: 0 0 10px; border: 1px solid var(--dn-line-strong); border-radius: 10px; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
-.dn-ai-message table:last-child { margin-bottom: 0; }
+.dn-ai-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 0 10px; border: 1px solid var(--dn-line-strong); border-radius: 10px; }
+.dn-ai-table-scroll:last-child { margin-bottom: 0; }
+.dn-ai-table-scroll table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
 .dn-ai-message thead { background: var(--dn-sand); }
 .dn-ai-message th { padding: 9px 14px; text-align: left; font-weight: 600; color: var(--dn-forest); border-bottom: 1px solid var(--dn-line-strong); white-space: nowrap; }
 .dn-ai-message th:not(:last-child),
 .dn-ai-message td:not(:last-child) { border-right: 1px solid var(--dn-line); }
-.dn-ai-message thead th:first-child { border-top-left-radius: 10px; }
-.dn-ai-message thead th:last-child { border-top-right-radius: 10px; }
+.dn-ai-table-scroll thead th:first-child { border-top-left-radius: 10px; }
+.dn-ai-table-scroll thead th:last-child { border-top-right-radius: 10px; }
 .dn-ai-message td { padding: 8px 14px; color: var(--dn-ink); border-bottom: 1px solid var(--dn-line); vertical-align: top; }
 .dn-ai-message tbody tr:last-child td { border-bottom: none; }
-.dn-ai-message tbody tr:last-child td:first-child { border-bottom-left-radius: 10px; }
-.dn-ai-message tbody tr:last-child td:last-child { border-bottom-right-radius: 10px; }
+.dn-ai-table-scroll tbody tr:last-child td:first-child { border-bottom-left-radius: 10px; }
+.dn-ai-table-scroll tbody tr:last-child td:last-child { border-bottom-right-radius: 10px; }
 .dn-ai-message tbody tr:nth-child(even) td { background: var(--dn-cream); }
 .dn-ai-model-name {
   margin: 0;

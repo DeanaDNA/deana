@@ -1077,6 +1077,9 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
         </a>
       );
     },
+    table({ children }) {
+      return <div className="dn-ai-table-scroll"><table>{children}</table></div>;
+    },
     text({ children }) {
       const value = String(children);
       const nodes: Array<string | JSX.Element> = [];
