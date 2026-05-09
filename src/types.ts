@@ -513,6 +513,7 @@ export interface StoredChatThread {
   title: string;
   createdAt: string;
   updatedAt: string;
+  modelId?: string;
 }
 
 export interface StoredChatMessage {

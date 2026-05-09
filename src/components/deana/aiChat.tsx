@@ -602,6 +602,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
       ...thread,
       title: formatChatTitle(prompt) || "New chat",
       updatedAt: now,
+      modelId: latestPropsRef.current.selectedModel,
     };
     activeThreadRef.current = fallbackThread;
     setActiveThread(fallbackThread);
@@ -780,6 +781,7 @@ export function ExplorerAiChat(props: ExplorerAiChatProps) {
       const nextThread = {
         ...thread,
         updatedAt: now,
+        modelId: latestPropsRef.current.selectedModel,
       };
       await saveChatThread(nextThread);
       isActiveThreadSavedRef.current = true;
@@ -1421,7 +1423,10 @@ function ThreadList({
           <div className={`dn-ai-thread ${thread.id === activeThreadId ? "is-active" : ""}`} key={thread.id}>
             <button type="button" onClick={() => onSelect(thread)}>
               <strong>{thread.title}</strong>
-              <span>{new Date(thread.updatedAt).toLocaleDateString()}</span>
+              <span>
+                {thread.modelId ? `${modelDisplayName(thread.modelId)} · ` : ""}
+                {new Date(thread.updatedAt).toLocaleDateString()}
+              </span>
             </button>
             <button className="dn-icon-button dn-ai-thread__delete" type="button" aria-label={`Delete chat ${thread.title}`} onClick={() => onDelete(thread)}>
               <Icon name="trash" />
