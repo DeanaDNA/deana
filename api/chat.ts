@@ -28,6 +28,7 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 20;
 
 const requestCounts = new Map<string, { count: number; resetAt: number }>();
+const allowedModels = availableModelsFromEnv(process.env);
 const explicitSearchIntentPattern = /\b(search|find|look up|lookup|check|scan|show|list)\b/;
 const reportSubjectPattern = /\b(report|finding|findings|marker|markers|gene|genes|variant|variants|snp|snps|rs\d+|risk|trait|drug|condition|evidence)\b/;
 const phenotypeQuestionPattern = /\b(will i|am i|do i|could i|would i|likely to|chance of|risk of|prone to|predisposed to|carrier for|anything about)\b/;
@@ -278,7 +279,6 @@ export default async function handler(request: Request): Promise<Response> {
       apiKey: getGatewayApiKey(request, process.env),
     });
 
-    const allowedModels = availableModelsFromEnv(process.env);
     const requestedModel = parsed.data.model?.trim();
     const model = requestedModel && allowedModels.includes(requestedModel)
       ? requestedModel

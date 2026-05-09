@@ -258,6 +258,7 @@ export function ExplorerScreen({
     const s = loadSettings();
     return s.modelId && availableModels.includes(s.modelId) ? s.modelId : availableModels[0] ?? "";
   });
+  const openSettings = useCallback(() => setIsSettingsOpen(true), []);
   const previousTabRef = useRef<ExplorerTab | null>(null);
 
   const filterKey = useMemo(() => filterSearchKey(searchParams), [searchParams]);
@@ -387,7 +388,7 @@ export function ExplorerScreen({
       isAiEnabled={isAiEnabled === true}
       onTabChange={setTab}
       onBackHome={() => navigate("/")}
-      onOpenSettings={() => setIsSettingsOpen(true)}
+      onOpenSettings={openSettings}
     >
       {tab === "overview" ? (
         <OverviewContent profile={profile} onExploreCategory={setTab} />
@@ -402,7 +403,7 @@ export function ExplorerScreen({
           onPendingPromptConsumed={() => setPendingAiPrompt(null)}
           selectedModel={selectedModel}
           availableModels={availableModels}
-          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenSettings={openSettings}
         />
       ) : tab === "ai" ? (
         <OverviewContent profile={profile} onExploreCategory={setTab} />
