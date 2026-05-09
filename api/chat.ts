@@ -382,7 +382,6 @@ export default async function handler(request: Request): Promise<Response> {
         system: buildSystemPrompt(parsed.data.context),
         messages: await convertToModelMessages(messages),
         tools: searchTool,
-        ...(requiresReportSearch ? { toolChoice: { type: "tool" as const, toolName: CHAT_SEARCH_TOOL_NAME } } : {}),
       });
       return result.toUIMessageStreamResponse({
         headers: { "Cache-Control": "no-store" },
