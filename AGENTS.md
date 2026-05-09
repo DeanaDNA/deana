@@ -46,6 +46,13 @@ AI chat is optional, explicitly consent-gated, and is the only product feature t
 - `api/chat.ts` is an Edge Function that validates consent/context/messages, calls AI SDK `streamText`, uses `convertToModelMessages`, and returns `toUIMessageStreamResponse`.
 - `api/chat-title.ts` is an Edge Function that uses `generateText` for short thread titles.
 
+### Model Selection
+
+- `src/lib/ai/models.ts` owns `AVAILABLE_MODELS` (the default five-model list), `MODEL_DISPLAY_NAMES`, `availableModelsFromEnv` (reads `VITE_DEANA_MODEL_LIST`), `modelDisplayName`, and `chatModelFromEnv`.
+- `src/lib/settings.ts` is a thin localStorage wrapper (`loadSettings` / `saveSettings`) that persists user preferences under the key `deana-settings`. It stores `{ modelId?: string }`. This is the only intentional use of localStorage in the app.
+- Users pick a model from the Settings modal in the Explorer. The selection is sent as the `model` field in each chat request. `api/chat.ts` validates it against `availableModelsFromEnv(process.env)` and falls back to `DEANA_LLM_MODEL` or the list default for unknown values.
+- `VITE_DEANA_MODEL_LIST` is a comma-separated env var that controls both the frontend selector list (baked in at build time) and the server allowlist (read at startup). `DEANA_LLM_MODEL` is a server-only fallback for deployments that do not use per-user selection.
+
 Production should authenticate AI Gateway with Vercel OIDC. Local chat testing needs `bun run vercel:link`, `bun run vercel:env`, and `bun run dev:vercel`; OIDC values expire, so refresh `.env.local` when Gateway auth fails. `AI_GATEWAY_API_KEY` is only for local/self-hosted fallback and must never use a `VITE_` prefix or be committed.
 
 Keep Gateway privacy behavior fail-closed. Chat and title calls should keep `providerOptions.gateway.zeroDataRetention: true`; Gemini Gateway routes should stay constrained to Vertex when the code requires that route; failures should use generic user-facing errors. When changing model IDs, reasoning settings, or provider options, verify the current AI SDK and AI Gateway docs because provider option shapes and model capabilities change.

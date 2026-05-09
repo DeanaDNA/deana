@@ -13,7 +13,7 @@ The project is public and contributor-friendly, but it is not OSI open source un
 - Sharded static evidence packs served from `public/evidence-packs`.
 - Medical, pharmacogenomic, and trait-oriented report cards with source context and caveats.
 - Explorer view with filters, sorting, marker inspection, and source links.
-- Opt-in AI chat for interpreting visible report findings through Vercel AI Gateway.
+- Opt-in AI chat for interpreting visible report findings through Vercel AI Gateway, with in-browser model selection persisted to localStorage.
 - Offline HTML export and browser-print PDF flow.
 
 ## Privacy Model
@@ -83,11 +83,18 @@ Production setup:
 1. Deploy Deana on Vercel.
 2. Enable AI Gateway for the Vercel project or team.
 3. Use the default Vercel OIDC authentication provided to Vercel Functions. Deana reads the runtime OIDC token from Vercel's `x-vercel-oidc-token` Function request header, with `VERCEL_OIDC_TOKEN` kept as a local-development fallback. Do not expose AI credentials with a `VITE_` prefix.
-4. Optionally set the model:
+4. Optionally configure the available model list and default:
 
 ```bash
+# Comma-separated list exposed to frontend and used to validate user selections server-side.
+# First entry is the default. Falls back to the hardcoded AVAILABLE_MODELS list in src/lib/ai/models.ts.
+VITE_DEANA_MODEL_LIST=google/gemini-3-flash,openai/gpt-5.4-nano,openai/gpt-5-mini,deepseek/deepseek-v4-flash,deepseek/deepseek-v4-pro
+
+# Optional server-side fallback model when no valid user selection is present.
 DEANA_LLM_MODEL=google/gemini-3-flash
 ```
+
+Users can select their preferred model from the Settings modal inside the Explorer. The selection is stored in browser localStorage under `deana-settings` and sent with each chat request. The server validates the requested model against the `VITE_DEANA_MODEL_LIST` before use; unrecognised values fall back to `DEANA_LLM_MODEL` or the list default.
 
 The default chat model is `google/gemini-3-flash`. For that model, Deana routes Gateway calls through Vertex, requests low thinking output for the visible reasoning panel, requests Zero Data Retention, and fails closed when a compliant route is unavailable. Gateway calls are stateless: Deana restores thread context from local IndexedDB and includes the needed prior messages in each request.
 
@@ -113,6 +120,7 @@ bun run dev:vercel
 ```bash
 AI_GATEWAY_API_KEY=...
 DEANA_LLM_MODEL=google/gemini-3-flash
+VITE_DEANA_MODEL_LIST=google/gemini-3-flash,openai/gpt-5.4-nano,openai/gpt-5-mini,deepseek/deepseek-v4-flash,deepseek/deepseek-v4-pro
 ```
 
 Never commit `.env.local`, AI keys, raw DNA exports, or generated local evidence caches.
