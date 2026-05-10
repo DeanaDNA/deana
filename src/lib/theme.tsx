@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { loadSettings, saveSettings } from "./settings";
 
 interface ThemeContextValue {
   isDark: boolean;
@@ -7,14 +8,14 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue>({ isDark: false, toggle: () => { } });
 
-const STORAGE_KEY = "dn-theme";
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [isDark, setIsDark] = useState(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const settings = loadSettings();
 
-      if (stored) return stored === "dark";
+      if (settings.darkMode !== undefined) {
+        return settings.darkMode;
+      }
 
       return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
     } catch {
@@ -30,7 +31,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setIsDark((current) => {
       const next = !current;
 
-      try { localStorage.setItem(STORAGE_KEY, next ? "dark" : "light"); } catch { }
+      try { saveSettings({ ...loadSettings(), darkMode: next }); } catch { }
 
       return next;
     });

@@ -10,6 +10,7 @@ export interface DeanaSettings {
   byokModelId?: string;
   byokMaxMessageLength?: number;
   byokMaxFindings?: number;
+  darkMode?: boolean;
 }
 
 export function loadSettings(): DeanaSettings {
