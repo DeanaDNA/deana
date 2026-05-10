@@ -1,20 +1,20 @@
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type DependencyList, type ReactNode, type RefObject } from "react";
+import { SORT_FILTER_OPTIONS, type ExplorerFilters } from "../../lib/explorer";
+import { useTheme } from "../../lib/theme";
+import type { ExplorerTab, InsightCategory, MarkerSort, ProfileMeta, ReportEntry, ReportFacets, StoredMarkerSummary, StoredReportEntry } from "../../types";
 import { modelDisplayName } from "../../lib/ai/models";
 import {
   byokProviderPresetFromBaseUrl,
   byokProviderPresetFromId,
+  byokProviderPresetsForHost as providerPresetsForHost,
   MAX_BYOK_CONTEXT_FINDINGS_LIMIT,
   MAX_BYOK_USER_TEXT_LENGTH,
   MIN_BYOK_CONTEXT_FINDINGS,
   MIN_BYOK_USER_TEXT_LENGTH,
   normalizeByokMaxFindings,
   normalizeByokMaxMessageLength,
-  byokProviderPresetsForHost as providerPresetsForHost,
 } from "../../lib/aiChat";
-import { SORT_FILTER_OPTIONS, type ExplorerFilters } from "../../lib/explorer";
 import type { DeanaSettings } from "../../lib/settings";
-import { useTheme } from "../../lib/theme";
-import type { ExplorerTab, InsightCategory, MarkerSort, ProfileMeta, ReportEntry, ReportFacets, StoredMarkerSummary, StoredReportEntry } from "../../types";
 import { DEANA_GITHUB_URL, PrivacyModal, SupportDeanaModal } from "./marketing";
 import { DeanaWordmark, Icon, IconName } from "./ui";
 
@@ -99,89 +99,89 @@ export function ExplorerShell({
     <>
       <div className={`dn-explorer-shell ${isSidebarCollapsed ? "is-sidebar-collapsed" : ""}`}>
         <aside className={`dn-explorer-sidebar ${isSidebarCollapsed ? "is-collapsed" : ""}`} aria-label="Explorer navigation">
-        <div className="dn-sidebar-head">
-          <DeanaWordmark />
-          <button
-            className="dn-icon-button"
-            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!isSidebarCollapsed}
-            onClick={() => setIsSidebarCollapsed((value) => !value)}
-          >
-            <Icon name={isSidebarCollapsed ? "chevronRight" : "chevronLeft"} />
-          </button>
-        </div>
-        <nav>
-          {visibleNav.map((item) => (
+          <div className="dn-sidebar-head">
+            <DeanaWordmark />
             <button
-              key={item.id}
-              aria-label={`Open ${item.label}`}
-              className={activeTab === item.id ? "is-active" : ""}
-              onClick={() => onTabChange?.(item.id)}
+              className="dn-icon-button"
+              aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!isSidebarCollapsed}
+              onClick={() => setIsSidebarCollapsed((value) => !value)}
             >
-              <Icon name={item.icon} /> <span>{item.label}</span>
+              <Icon name={isSidebarCollapsed ? "chevronRight" : "chevronLeft"} />
             </button>
-          ))}
-          <hr />
-          <button onClick={onBackHome}><Icon name="upload" /> <span>Upload DNA</span></button>
-          <button onClick={onBackHome}><Icon name="file" /> <span>Reports</span></button>
-          <hr />
-          <button onClick={onOpenSettings}><Icon name="settings" /> <span>Settings</span></button>
-          <button onClick={() => setModal("help")}><Icon name="help" /> <span>Help</span></button>
-          <button onClick={() => setModal("support")}><Icon name="heart" /> <span>Support Deana</span></button>
-        </nav>
-        <div className="dn-sidebar-privacy"><Icon name="lock" /> Your data stays on this device. <button onClick={() => setModal("privacy")}>Learn more</button></div>
+          </div>
+          <nav>
+            {visibleNav.map((item) => (
+              <button
+                key={item.id}
+                aria-label={`Open ${item.label}`}
+                className={activeTab === item.id ? "is-active" : ""}
+                onClick={() => onTabChange?.(item.id)}
+              >
+                <Icon name={item.icon} /> <span>{item.label}</span>
+              </button>
+            ))}
+            <hr />
+            <button onClick={onBackHome}><Icon name="upload" /> <span>Upload DNA</span></button>
+            <button onClick={onBackHome}><Icon name="file" /> <span>Reports</span></button>
+            <hr />
+            <button onClick={onOpenSettings}><Icon name="settings" /> <span>Settings</span></button>
+            <button onClick={() => setModal("help")}><Icon name="help" /> <span>Help</span></button>
+            <button onClick={() => setModal("support")}><Icon name="heart" /> <span>Support Deana</span></button>
+          </nav>
+          <div className="dn-sidebar-privacy"><Icon name="lock" /> Your data stays on this device. <button onClick={() => setModal("privacy")}>Learn more</button></div>
         </aside>
 
         <div className="dn-explorer-main">
-        <header className="dn-explorer-topbar">
-          {activeTab === "overview" ? null : <span className="dn-screen-reader-text">Current report</span>}
-          <DeanaWordmark compact className="dn-show-mobile" />
-          <button className="dn-report-selector" onClick={onBackHome}>
-            <Icon name="file" />
-            <span>
-              <strong>{report.name}</strong>
-              <small>
-                <span className="dn-report-selector__meta">{report.provider} · {report.build}</span>
-                <span className="dn-report-selector__markers">{report.markerCount.toLocaleString()} markers</span>
-              </small>
-            </span>
-          </button>
-          <button className="dn-local-status" onClick={() => setModal("privacy")}><Icon name="shield" /> All analysis is local <i /></button>
-          <button className="dn-icon-button dn-hide-mobile" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} onClick={toggleTheme}><Icon name={isDark ? "sun" : "moon"} /></button>
-          <button className="dn-icon-button dn-hide-mobile" aria-label="Help" onClick={() => setModal("help")}><Icon name="help" /></button>
-          <div className="dn-show-mobile" style={{ position: "relative" }}>
-            <button className="dn-icon-button" aria-label="Menu" aria-expanded={isMobileMenuOpen} onClick={() => setIsMobileMenuOpen((v) => !v)}>
-              <Icon name="menu" />
+          <header className="dn-explorer-topbar">
+            {activeTab === "overview" ? null : <span className="dn-screen-reader-text">Current report</span>}
+            <DeanaWordmark compact className="dn-show-mobile" />
+            <button className="dn-report-selector" onClick={onBackHome}>
+              <Icon name="file" />
+              <span>
+                <strong>{report.name}</strong>
+                <small>
+                  <span className="dn-report-selector__meta">{report.provider} · {report.build}</span>
+                  <span className="dn-report-selector__markers">{report.markerCount.toLocaleString()} markers</span>
+                </small>
+              </span>
             </button>
-            {isMobileMenuOpen ? <div className="dn-mobile-menu-backdrop" onClick={() => setIsMobileMenuOpen(false)} /> : null}
-            {isMobileMenuOpen ? (
-              <nav className="dn-mobile-menu" aria-label="Mobile menu">
-                <button onClick={() => { setIsMobileMenuOpen(false); toggleTheme(); }}>
-                  <Icon name={isDark ? "sun" : "moon"} /> {isDark ? "Light mode" : "Dark mode"}
-                </button>
-                <button onClick={() => { setIsMobileMenuOpen(false); onOpenSettings?.(); }}>
-                  <Icon name="settings" /> Settings
-                </button>
-                <button onClick={() => { setIsMobileMenuOpen(false); setModal("support"); }}>
-                  <Icon name="heart" /> Support Deana
-                </button>
-                <button onClick={() => { setIsMobileMenuOpen(false); setModal("help"); }}>
-                  <Icon name="help" /> Help
-                </button>
-              </nav>
-            ) : null}
+            <button className="dn-local-status" onClick={() => setModal("privacy")}><Icon name="shield" /> All analysis is local <i /></button>
+            <button className="dn-icon-button dn-hide-mobile" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} onClick={toggleTheme}><Icon name={isDark ? "sun" : "moon"} /></button>
+            <button className="dn-icon-button dn-hide-mobile" aria-label="Help" onClick={() => setModal("help")}><Icon name="help" /></button>
+            <div className="dn-show-mobile" style={{ position: "relative" }}>
+              <button className="dn-icon-button" aria-label="Menu" aria-expanded={isMobileMenuOpen} onClick={() => setIsMobileMenuOpen((v) => !v)}>
+                <Icon name="menu" />
+              </button>
+              {isMobileMenuOpen ? <div className="dn-mobile-menu-backdrop" onClick={() => setIsMobileMenuOpen(false)} /> : null}
+              {isMobileMenuOpen ? (
+                <nav className="dn-mobile-menu" aria-label="Mobile menu">
+                  <button onClick={() => { setIsMobileMenuOpen(false); toggleTheme(); }}>
+                    <Icon name={isDark ? "sun" : "moon"} /> {isDark ? "Light mode" : "Dark mode"}
+                  </button>
+                  <button onClick={() => { setIsMobileMenuOpen(false); onOpenSettings?.(); }}>
+                    <Icon name="settings" /> Settings
+                  </button>
+                  <button onClick={() => { setIsMobileMenuOpen(false); setModal("support"); }}>
+                    <Icon name="heart" /> Support Deana
+                  </button>
+                  <button onClick={() => { setIsMobileMenuOpen(false); setModal("help"); }}>
+                    <Icon name="help" /> Help
+                  </button>
+                </nav>
+              ) : null}
+            </div>
+          </header>
+
+          <div className="dn-tabbar-wrap">
+            <nav className="dn-tabbar" aria-label="Explorer sections">
+              {visibleTabs.map((tab) => (
+                <button key={tab.id} className={activeTab === tab.id ? "is-active" : ""} onClick={() => onTabChange?.(tab.id)}>{tab.label}</button>
+              ))}
+            </nav>
           </div>
-        </header>
 
-        <div className="dn-tabbar-wrap">
-          <nav className="dn-tabbar" aria-label="Explorer sections">
-            {visibleTabs.map((tab) => (
-              <button key={tab.id} className={activeTab === tab.id ? "is-active" : ""} onClick={() => onTabChange?.(tab.id)}>{tab.label}</button>
-            ))}
-          </nav>
-        </div>
-
-        {children}
+          {children}
         </div>
       </div>
       {modal === "privacy" ? (
@@ -1135,7 +1135,7 @@ const FindingCard = memo(function FindingCard({
 
   return (
     <button className={`dn-finding-card ${selected ? "is-selected" : ""} dn-finding-tone-${toneForEntry(entry)}`} onClick={handleClick}>
-        <span className="dn-finding-card__icon"><Icon name={iconForTab(entry.category)} /></span>
+      <span className="dn-finding-card__icon"><Icon name={iconForTab(entry.category)} /></span>
       <div className="dn-finding-card__main">
         <div className="dn-finding-card__meta">
           <span>{entry.sources[0]?.name ?? "Source"}</span>

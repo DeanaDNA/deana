@@ -40,7 +40,7 @@ export function MarketingFirstVisit({
   return (
     <main className="dn-marketing-shell dn-marketing-shell--first">
       <header className="dn-marketing-header">
-        <DeanaWordmark />e
+        <DeanaWordmark />
         <MarketingHeaderActions onPrivacy={onPrivacy} onSupport={onSupport} />
       </header>
 
