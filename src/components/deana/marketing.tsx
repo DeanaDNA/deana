@@ -40,7 +40,7 @@ export function MarketingFirstVisit({
   return (
     <main className="dn-marketing-shell dn-marketing-shell--first">
       <header className="dn-marketing-header">
-        <DeanaWordmark />
+        <DeanaWordmark />e
         <MarketingHeaderActions onPrivacy={onPrivacy} onSupport={onSupport} />
       </header>
 
@@ -154,7 +154,7 @@ function MarketingHeaderActions({
     <nav className="dn-header-actions" aria-label="Homepage actions">
       <button className="dn-button dn-button--ghost dn-header-action-icon" aria-label="Support Deana" onClick={onSupport}><Icon name="heart" /> Support Deana</button>
       <button className="dn-button dn-button--ghost dn-header-action-icon" aria-label="About privacy" onClick={onPrivacy}><Icon name="lock" /> About privacy</button>
-      <button className="dn-icon-button" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} onClick={toggle}>
+      <button className="dn-button dn-icon-button dn-button--ghost dn-header-action-icon" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} onClick={toggle}>
         <Icon name={isDark ? "sun" : "moon"} />
       </button>
       {onCreateNew ? (
