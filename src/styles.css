@@ -1659,3 +1659,262 @@ a { color: inherit; }
   .dn-ai-composer { border-radius: 20px; }
   .dn-ai-composer__secondary { display: none; }
 }
+
+
+/* ─────────── DARK MODE ─────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --dn-forest: #9dc7b2;
+  --dn-forest-2: #7aaa94;
+  --dn-sage: #5c8a70;
+  --dn-eucalyptus: #3f6b54;
+  --dn-mint: #1a3326;
+  --dn-clay: #ef754a;
+  --dn-clay-dark: #f4896e;
+  --dn-blush: #3d1e10;
+  --dn-cream: #0f1a14;
+  --dn-sand: #152219;
+  --dn-paper: #1a2e22;
+  --dn-line: #253e2f;
+  --dn-line-strong: #2f5040;
+  --dn-muted: #8aa998;
+  --dn-muted-2: #6a8878;
+  --dn-ink: #e8e4db;
+  --dn-blue: #5b9fd3;
+  --dn-amber: #e09a42;
+  --dn-danger-bg: #3d1e10;
+  --dn-success-bg: #152e20;
+  --dn-shadow: 0 18px 60px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --dn-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 16% 10%, rgba(30, 61, 51, 0.35), transparent 28%),
+    radial-gradient(circle at 80% 30%, rgba(20, 45, 30, 0.3), transparent 25%),
+    var(--dn-cream);
+}
+
+[data-theme="dark"] .dn-hero-copy,
+[data-theme="dark"] .dn-processing-hero p {
+  color: var(--dn-muted);
+}
+
+[data-theme="dark"] .dn-marketing-shell {
+  background: rgba(15, 26, 20, 0.92);
+}
+
+[data-theme="dark"] .dn-loading-screen {
+  background: rgba(15, 26, 20, 0.92);
+}
+
+[data-theme="dark"] .dn-tab-loading-overlay {
+  background: rgba(15, 26, 20, 0.86);
+}
+
+[data-theme="dark"] .dn-button--secondary {
+  background: var(--dn-paper);
+  color: var(--dn-forest);
+}
+
+[data-theme="dark"] .dn-button--ghost {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .dn-report-row,
+[data-theme="dark"] .dn-finding-card,
+[data-theme="dark"] .dn-finding-inspector,
+[data-theme="dark"] .dn-marker-inspector,
+[data-theme="dark"] .dn-parsed-file-card,
+[data-theme="dark"] .dn-privacy-point,
+[data-theme="dark"] .dn-filter-checklist,
+[data-theme="dark"] .dn-evidence-snapshot div,
+[data-theme="dark"] .dn-source-link-list a,
+[data-theme="dark"] .dn-source-link-static,
+[data-theme="dark"] .dn-help-point-list article {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-finding-card.is-selected,
+[data-theme="dark"] .dn-raw-marker-card.is-selected {
+  background: #2a1810;
+  border-color: var(--dn-clay);
+}
+
+[data-theme="dark"] .dn-filter-sidebar {
+  background: rgba(26, 46, 34, 0.55);
+}
+
+[data-theme="dark"] .dn-inspector {
+  background: rgba(26, 46, 34, 0.85);
+}
+
+[data-theme="dark"] .dn-filter-search input,
+[data-theme="dark"] .dn-field input,
+[data-theme="dark"] .dn-field select {
+  background: var(--dn-sand);
+  color: var(--dn-ink);
+}
+
+[data-theme="dark"] .dn-dropzone {
+  background: rgba(26, 46, 34, 0.5);
+}
+
+[data-theme="dark"] .dn-parse-status {
+  background: rgba(26, 46, 34, 0.6);
+}
+
+[data-theme="dark"] .dn-callout {
+  background: rgba(26, 46, 34, 0.6);
+}
+
+[data-theme="dark"] .dn-filter-rail-button {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-teaser-grid span {
+  background: rgba(26, 46, 34, 0.05);
+}
+
+[data-theme="dark"] .dn-report-selector {
+  background: linear-gradient(180deg, var(--dn-paper), var(--dn-sand));
+}
+
+[data-theme="dark"] .dn-finding-card__snapshot span {
+  background: rgba(26, 46, 34, 0.6);
+}
+
+[data-theme="dark"] .dn-linear-progress {
+  background: var(--dn-line-strong);
+}
+
+[data-theme="dark"] .dn-magnitude-bar {
+  background: var(--dn-line-strong);
+}
+
+[data-theme="dark"] .dn-step-number {
+  background: #1f4030;
+  border-color: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-round-icon {
+  background: var(--dn-mint);
+}
+
+[data-theme="dark"] .dn-repute-chip--mixed {
+  background: #2e2008;
+  color: #e0a840;
+}
+
+[data-theme="dark"] .dn-privacy-banner {
+  background: rgba(21, 34, 25, 0.92);
+}
+
+[data-theme="dark"] .dn-privacy-banner--source {
+  background: rgba(18, 34, 20, 0.92);
+}
+
+[data-theme="dark"] .dn-modal {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-modal-backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+[data-theme="dark"] .dn-export-menu__panel {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-export-menu__panel button:hover {
+  background: var(--dn-mint);
+}
+
+[data-theme="dark"] .dn-mobile-menu {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-mobile-menu button:hover {
+  background: var(--dn-sand);
+}
+
+[data-theme="dark"] .dn-inspector code {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .dn-ai-thread-list {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-ai-compose-button,
+[data-theme="dark"] .dn-ai-thread-collapse {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-ai-thread-rail-button {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-ai-thread:hover,
+[data-theme="dark"] .dn-ai-thread.is-active {
+  background: var(--dn-sand);
+}
+
+[data-theme="dark"] .dn-ai-search-card {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-ai-composer {
+  background: var(--dn-paper);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .dn-ai-follow-ups button {
+  background: var(--dn-paper);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .dn-ai-trace__findings button {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-ai-side-panel {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-ai-side-panel__header {
+  background: rgba(26, 46, 34, 0.92);
+}
+
+[data-theme="dark"] .dn-ai-thread-note__close {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .dn-ai-consent__points .dn-privacy-point {
+  background: #2a1a10;
+  border-color: #4a2f1c;
+}
+
+[data-theme="dark"] .dn-ai-form {
+  --dn-ai-form-backdrop-rgb: 15, 26, 20;
+}
+
+[data-theme="dark"] .dn-ai-reasoning-toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .dn-raw-marker-card {
+  background: var(--dn-paper);
+}
+
+[data-theme="dark"] .dn-overview-metric strong {
+  color: var(--dn-forest);
+}
+
+[data-theme="dark"] .dn-overview-metric svg {
+  color: var(--dn-sage);
+}
+
+[data-theme="dark"] .dn-local-status {
+  background: var(--dn-paper);
+}

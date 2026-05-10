@@ -1,19 +1,20 @@
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type DependencyList, type ReactNode, type RefObject } from "react";
-import { SORT_FILTER_OPTIONS, type ExplorerFilters } from "../../lib/explorer";
-import type { ExplorerTab, InsightCategory, MarkerSort, ProfileMeta, ReportEntry, ReportFacets, StoredMarkerSummary, StoredReportEntry } from "../../types";
 import { modelDisplayName } from "../../lib/ai/models";
 import {
   byokProviderPresetFromBaseUrl,
   byokProviderPresetFromId,
-  byokProviderPresetsForHost as providerPresetsForHost,
   MAX_BYOK_CONTEXT_FINDINGS_LIMIT,
   MAX_BYOK_USER_TEXT_LENGTH,
   MIN_BYOK_CONTEXT_FINDINGS,
   MIN_BYOK_USER_TEXT_LENGTH,
   normalizeByokMaxFindings,
   normalizeByokMaxMessageLength,
+  byokProviderPresetsForHost as providerPresetsForHost,
 } from "../../lib/aiChat";
+import { SORT_FILTER_OPTIONS, type ExplorerFilters } from "../../lib/explorer";
 import type { DeanaSettings } from "../../lib/settings";
+import { useTheme } from "../../lib/theme";
+import type { ExplorerTab, InsightCategory, MarkerSort, ProfileMeta, ReportEntry, ReportFacets, StoredMarkerSummary, StoredReportEntry } from "../../types";
 import { DEANA_GITHUB_URL, PrivacyModal, SupportDeanaModal } from "./marketing";
 import { DeanaWordmark, Icon, IconName } from "./ui";
 
@@ -92,6 +93,7 @@ export function ExplorerShell({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const visibleNav = isAiEnabled ? nav : visibleNavWithoutAi;
   const visibleTabs = isAiEnabled ? tabs : visibleTabsWithoutAi;
+  const { isDark, toggle: toggleTheme } = useTheme();
 
   return (
     <>
@@ -145,6 +147,7 @@ export function ExplorerShell({
             </span>
           </button>
           <button className="dn-local-status" onClick={() => setModal("privacy")}><Icon name="shield" /> All analysis is local <i /></button>
+          <button className="dn-icon-button dn-hide-mobile" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} onClick={toggleTheme}><Icon name={isDark ? "sun" : "moon"} /></button>
           <button className="dn-icon-button dn-hide-mobile" aria-label="Help" onClick={() => setModal("help")}><Icon name="help" /></button>
           <div className="dn-show-mobile" style={{ position: "relative" }}>
             <button className="dn-icon-button" aria-label="Menu" aria-expanded={isMobileMenuOpen} onClick={() => setIsMobileMenuOpen((v) => !v)}>
@@ -153,6 +156,9 @@ export function ExplorerShell({
             {isMobileMenuOpen ? <div className="dn-mobile-menu-backdrop" onClick={() => setIsMobileMenuOpen(false)} /> : null}
             {isMobileMenuOpen ? (
               <nav className="dn-mobile-menu" aria-label="Mobile menu">
+                <button onClick={() => { setIsMobileMenuOpen(false); toggleTheme(); }}>
+                  <Icon name={isDark ? "sun" : "moon"} /> {isDark ? "Light mode" : "Dark mode"}
+                </button>
                 <button onClick={() => { setIsMobileMenuOpen(false); onOpenSettings?.(); }}>
                   <Icon name="settings" /> Settings
                 </button>

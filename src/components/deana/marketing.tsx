@@ -1,4 +1,5 @@
 import type { DragEvent } from "react";
+import { useTheme } from "../../lib/theme";
 import type { DnaParseProgress, EvidenceProgressSnapshot, ParsedDnaFile } from "../../types";
 import { DeanaWordmark, Icon } from "./ui";
 
@@ -147,10 +148,15 @@ function MarketingHeaderActions({
   onPrivacy?: () => void;
   onSupport?: () => void;
 }) {
+  const { isDark, toggle } = useTheme();
+
   return (
     <nav className="dn-header-actions" aria-label="Homepage actions">
       <button className="dn-button dn-button--ghost dn-header-action-icon" aria-label="Support Deana" onClick={onSupport}><Icon name="heart" /> Support Deana</button>
       <button className="dn-button dn-button--ghost dn-header-action-icon" aria-label="About privacy" onClick={onPrivacy}><Icon name="lock" /> About privacy</button>
+      <button className="dn-icon-button" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} onClick={toggle}>
+        <Icon name={isDark ? "sun" : "moon"} />
+      </button>
       {onCreateNew ? (
         <button className="dn-button dn-button--primary dn-hide-mobile" onClick={onCreateNew}><Icon name="plus" /> Create new report</button>
       ) : null}
