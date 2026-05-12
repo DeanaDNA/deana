@@ -14,7 +14,7 @@ import {
   normalizeByokMaxFindings,
   normalizeByokMaxMessageLength,
 } from "../../lib/aiChat";
-import type { DeanaSettings } from "../../lib/settings";
+import { THEME_MODES, type DeanaSettings, type ThemeMode } from "../../lib/settings";
 import { DEANA_GITHUB_URL, PrivacyModal, SupportDeanaModal } from "./marketing";
 import { DeanaWordmark, Icon, IconName } from "./ui";
 
@@ -26,6 +26,12 @@ export interface ExplorerReportCard {
   markerCount: number;
   evidencePackVersion: string;
 }
+
+const THEME_MODE_LABELS: Record<ThemeMode, string> = {
+  system: "System",
+  light: "Light",
+  dark: "Dark",
+};
 
 const tabs: Array<{ id: ExplorerTab; label: string }> = [
   { id: "overview", label: "Overview" },
@@ -93,7 +99,6 @@ export function ExplorerShell({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const visibleNav = isAiEnabled ? nav : visibleNavWithoutAi;
   const visibleTabs = isAiEnabled ? tabs : visibleTabsWithoutAi;
-  const { isDark, toggle: toggleTheme } = useTheme();
 
   return (
     <>
@@ -147,7 +152,6 @@ export function ExplorerShell({
               </span>
             </button>
             <button className="dn-local-status" onClick={() => setModal("privacy")}><Icon name="shield" /> All analysis is local <i /></button>
-            <button className="dn-icon-button dn-hide-mobile" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"} onClick={toggleTheme}><Icon name={isDark ? "sun" : "moon"} /></button>
             <button className="dn-icon-button dn-hide-mobile" aria-label="Help" onClick={() => setModal("help")}><Icon name="help" /></button>
             <div className="dn-show-mobile" style={{ position: "relative" }}>
               <button className="dn-icon-button" aria-label="Menu" aria-expanded={isMobileMenuOpen} onClick={() => setIsMobileMenuOpen((v) => !v)}>
@@ -156,9 +160,6 @@ export function ExplorerShell({
               {isMobileMenuOpen ? <div className="dn-mobile-menu-backdrop" onClick={() => setIsMobileMenuOpen(false)} /> : null}
               {isMobileMenuOpen ? (
                 <nav className="dn-mobile-menu" aria-label="Mobile menu">
-                  <button onClick={() => { setIsMobileMenuOpen(false); toggleTheme(); }}>
-                    <Icon name={isDark ? "sun" : "moon"} /> {isDark ? "Light mode" : "Dark mode"}
-                  </button>
                   <button onClick={() => { setIsMobileMenuOpen(false); onOpenSettings?.(); }}>
                     <Icon name="settings" /> Settings
                   </button>
@@ -272,6 +273,8 @@ export function SettingsModal({
   const [pendingByokModelId, setPendingByokModelId] = useState(initialByokModelId);
   const [pendingByokMaxMessageLength, setPendingByokMaxMessageLength] = useState(String(normalizeByokMaxMessageLength(initialByokMaxMessageLength)));
   const [pendingByokMaxFindings, setPendingByokMaxFindings] = useState(String(normalizeByokMaxFindings(initialByokMaxFindings)));
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const [pendingThemeMode, setPendingThemeMode] = useState<ThemeMode>(themeMode);
 
   const byokProviderPresets = providerPresetsForHost(window.location.hostname);
   const selectedPreset = pendingByokProviderId
@@ -285,8 +288,26 @@ export function SettingsModal({
           <h1 id="settings-title" className="dn-settings-modal__title">Settings</h1>
           <button className="dn-icon-button" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
         </div>
+        <div className="dn-settings-section">
+          <span className="dn-settings-label" id="settings-theme-label">Appearance</span>
+          <p className="dn-settings-description">Use your system preference or choose a fixed light or dark theme.</p>
+          <div className="dn-segmented-control" role="radiogroup" aria-labelledby="settings-theme-label">
+            {THEME_MODES.map((mode) => (
+              <label key={mode} className="dn-segmented-control__option">
+                <input
+                  type="radio"
+                  name="settings-theme"
+                  value={mode}
+                  checked={pendingThemeMode === mode}
+                  onChange={() => setPendingThemeMode(mode)}
+                />
+                <span>{THEME_MODE_LABELS[mode]}</span>
+              </label>
+            ))}
+          </div>
+        </div>
         {!pendingByokEnabled ? (
-          <div className="dn-settings-section">
+          <div className="dn-settings-section dn-settings-section--divided">
             <label className="dn-settings-label" htmlFor="settings-model-select">AI Model</label>
             <p className="dn-settings-description">Choose the AI model used for chat. Settings are saved locally in this browser.</p>
             <div className="dn-field dn-field--select dn-settings-field">
@@ -443,17 +464,21 @@ export function SettingsModal({
           <button
             className="dn-button dn-button--primary"
             type="button"
-            onClick={() => onSave({
-              modelId: pendingModel,
-              showReasoning: pendingShowReasoning,
-              byokEnabled: pendingByokEnabled,
-              byokProviderId: pendingByokEnabled ? selectedPreset.providerId : undefined,
-              byokApiKey: pendingByokEnabled ? pendingByokApiKey : undefined,
-              byokBaseUrl: pendingByokEnabled ? pendingByokBaseUrl : undefined,
-              byokModelId: pendingByokEnabled ? (pendingByokModelId.trim() || selectedPreset.defaultModel) : undefined,
-              byokMaxMessageLength: pendingByokEnabled ? normalizeByokMaxMessageLength(pendingByokMaxMessageLength) : undefined,
-              byokMaxFindings: pendingByokEnabled ? normalizeByokMaxFindings(pendingByokMaxFindings) : undefined,
-            })}
+            onClick={() => {
+              if (pendingThemeMode !== themeMode) setThemeMode(pendingThemeMode);
+              onSave({
+                modelId: pendingModel,
+                showReasoning: pendingShowReasoning,
+                byokEnabled: pendingByokEnabled,
+                byokProviderId: pendingByokEnabled ? selectedPreset.providerId : undefined,
+                byokApiKey: pendingByokEnabled ? pendingByokApiKey : undefined,
+                byokBaseUrl: pendingByokEnabled ? pendingByokBaseUrl : undefined,
+                byokModelId: pendingByokEnabled ? (pendingByokModelId.trim() || selectedPreset.defaultModel) : undefined,
+                byokMaxMessageLength: pendingByokEnabled ? normalizeByokMaxMessageLength(pendingByokMaxMessageLength) : undefined,
+                byokMaxFindings: pendingByokEnabled ? normalizeByokMaxFindings(pendingByokMaxFindings) : undefined,
+                themeMode: pendingThemeMode,
+              });
+            }}
           >
             Save
           </button>

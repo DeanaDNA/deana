@@ -1,5 +1,9 @@
 const SETTINGS_KEY = "deana-settings";
 
+export const THEME_MODES = ["system", "light", "dark"] as const;
+
+export type ThemeMode = (typeof THEME_MODES)[number];
+
 export interface DeanaSettings {
   modelId?: string;
   showReasoning?: boolean;
@@ -10,7 +14,19 @@ export interface DeanaSettings {
   byokModelId?: string;
   byokMaxMessageLength?: number;
   byokMaxFindings?: number;
-  darkMode?: boolean;
+  themeMode?: ThemeMode;
+}
+
+function isThemeMode(value: unknown): value is ThemeMode {
+  return typeof value === "string" && THEME_MODES.includes(value as ThemeMode);
+}
+
+export function normalizeThemeMode(settings: DeanaSettings): ThemeMode {
+  if (isThemeMode(settings.themeMode)) {
+    return settings.themeMode;
+  }
+
+  return "system";
 }
 
 export function loadSettings(): DeanaSettings {
