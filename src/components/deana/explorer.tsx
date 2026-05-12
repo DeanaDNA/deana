@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type DependencyList, type ReactNode, type RefObject } from "react";
 import { SORT_FILTER_OPTIONS, type ExplorerFilters } from "../../lib/explorer";
+import { useTheme } from "../../lib/theme";
 import type { ExplorerTab, InsightCategory, MarkerSort, ProfileMeta, ReportEntry, ReportFacets, StoredMarkerSummary, StoredReportEntry } from "../../types";
 import { modelDisplayName } from "../../lib/ai/models";
 import {
@@ -13,7 +14,7 @@ import {
   normalizeByokMaxFindings,
   normalizeByokMaxMessageLength,
 } from "../../lib/aiChat";
-import type { DeanaSettings } from "../../lib/settings";
+import { THEME_MODES, type DeanaSettings, type ThemeMode } from "../../lib/settings";
 import { DEANA_GITHUB_URL, PrivacyModal, SupportDeanaModal } from "./marketing";
 import { DeanaWordmark, Icon, IconName } from "./ui";
 
@@ -25,6 +26,12 @@ export interface ExplorerReportCard {
   markerCount: number;
   evidencePackVersion: string;
 }
+
+const THEME_MODE_LABELS: Record<ThemeMode, string> = {
+  system: "System",
+  light: "Light",
+  dark: "Dark",
+};
 
 const tabs: Array<{ id: ExplorerTab; label: string }> = [
   { id: "overview", label: "Overview" },
@@ -97,85 +104,85 @@ export function ExplorerShell({
     <>
       <div className={`dn-explorer-shell ${isSidebarCollapsed ? "is-sidebar-collapsed" : ""}`}>
         <aside className={`dn-explorer-sidebar ${isSidebarCollapsed ? "is-collapsed" : ""}`} aria-label="Explorer navigation">
-        <div className="dn-sidebar-head">
-          <DeanaWordmark />
-          <button
-            className="dn-icon-button"
-            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!isSidebarCollapsed}
-            onClick={() => setIsSidebarCollapsed((value) => !value)}
-          >
-            <Icon name={isSidebarCollapsed ? "chevronRight" : "chevronLeft"} />
-          </button>
-        </div>
-        <nav>
-          {visibleNav.map((item) => (
+          <div className="dn-sidebar-head">
+            <DeanaWordmark />
             <button
-              key={item.id}
-              aria-label={`Open ${item.label}`}
-              className={activeTab === item.id ? "is-active" : ""}
-              onClick={() => onTabChange?.(item.id)}
+              className="dn-icon-button"
+              aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!isSidebarCollapsed}
+              onClick={() => setIsSidebarCollapsed((value) => !value)}
             >
-              <Icon name={item.icon} /> <span>{item.label}</span>
+              <Icon name={isSidebarCollapsed ? "chevronRight" : "chevronLeft"} />
             </button>
-          ))}
-          <hr />
-          <button onClick={onBackHome}><Icon name="upload" /> <span>Upload DNA</span></button>
-          <button onClick={onBackHome}><Icon name="file" /> <span>Reports</span></button>
-          <hr />
-          <button onClick={onOpenSettings}><Icon name="settings" /> <span>Settings</span></button>
-          <button onClick={() => setModal("help")}><Icon name="help" /> <span>Help</span></button>
-          <button onClick={() => setModal("support")}><Icon name="heart" /> <span>Support Deana</span></button>
-        </nav>
-        <div className="dn-sidebar-privacy"><Icon name="lock" /> Your data stays on this device. <button onClick={() => setModal("privacy")}>Learn more</button></div>
+          </div>
+          <nav>
+            {visibleNav.map((item) => (
+              <button
+                key={item.id}
+                aria-label={`Open ${item.label}`}
+                className={activeTab === item.id ? "is-active" : ""}
+                onClick={() => onTabChange?.(item.id)}
+              >
+                <Icon name={item.icon} /> <span>{item.label}</span>
+              </button>
+            ))}
+            <hr />
+            <button onClick={onBackHome}><Icon name="upload" /> <span>Upload DNA</span></button>
+            <button onClick={onBackHome}><Icon name="file" /> <span>Reports</span></button>
+            <hr />
+            <button onClick={onOpenSettings}><Icon name="settings" /> <span>Settings</span></button>
+            <button onClick={() => setModal("help")}><Icon name="help" /> <span>Help</span></button>
+            <button onClick={() => setModal("support")}><Icon name="heart" /> <span>Support Deana</span></button>
+          </nav>
+          <div className="dn-sidebar-privacy"><Icon name="lock" /> Your data stays on this device. <button onClick={() => setModal("privacy")}>Learn more</button></div>
         </aside>
 
         <div className="dn-explorer-main">
-        <header className="dn-explorer-topbar">
-          {activeTab === "overview" ? null : <span className="dn-screen-reader-text">Current report</span>}
-          <DeanaWordmark compact className="dn-show-mobile" />
-          <button className="dn-report-selector" onClick={onBackHome}>
-            <Icon name="file" />
-            <span>
-              <strong>{report.name}</strong>
-              <small>
-                <span className="dn-report-selector__meta">{report.provider} · {report.build}</span>
-                <span className="dn-report-selector__markers">{report.markerCount.toLocaleString()} markers</span>
-              </small>
-            </span>
-          </button>
-          <button className="dn-local-status" onClick={() => setModal("privacy")}><Icon name="shield" /> All analysis is local <i /></button>
-          <button className="dn-icon-button dn-hide-mobile" aria-label="Help" onClick={() => setModal("help")}><Icon name="help" /></button>
-          <div className="dn-show-mobile" style={{ position: "relative" }}>
-            <button className="dn-icon-button" aria-label="Menu" aria-expanded={isMobileMenuOpen} onClick={() => setIsMobileMenuOpen((v) => !v)}>
-              <Icon name="menu" />
+          <header className="dn-explorer-topbar">
+            {activeTab === "overview" ? null : <span className="dn-screen-reader-text">Current report</span>}
+            <DeanaWordmark compact className="dn-show-mobile" />
+            <button className="dn-report-selector" onClick={onBackHome}>
+              <Icon name="file" />
+              <span>
+                <strong>{report.name}</strong>
+                <small>
+                  <span className="dn-report-selector__meta">{report.provider} · {report.build}</span>
+                  <span className="dn-report-selector__markers">{report.markerCount.toLocaleString()} markers</span>
+                </small>
+              </span>
             </button>
-            {isMobileMenuOpen ? <div className="dn-mobile-menu-backdrop" onClick={() => setIsMobileMenuOpen(false)} /> : null}
-            {isMobileMenuOpen ? (
-              <nav className="dn-mobile-menu" aria-label="Mobile menu">
-                <button onClick={() => { setIsMobileMenuOpen(false); onOpenSettings?.(); }}>
-                  <Icon name="settings" /> Settings
-                </button>
-                <button onClick={() => { setIsMobileMenuOpen(false); setModal("support"); }}>
-                  <Icon name="heart" /> Support Deana
-                </button>
-                <button onClick={() => { setIsMobileMenuOpen(false); setModal("help"); }}>
-                  <Icon name="help" /> Help
-                </button>
-              </nav>
-            ) : null}
+            <button className="dn-local-status" onClick={() => setModal("privacy")}><Icon name="shield" /> All analysis is local <i /></button>
+            <button className="dn-icon-button dn-hide-mobile" aria-label="Help" onClick={() => setModal("help")}><Icon name="help" /></button>
+            <div className="dn-show-mobile" style={{ position: "relative" }}>
+              <button className="dn-icon-button" aria-label="Menu" aria-expanded={isMobileMenuOpen} onClick={() => setIsMobileMenuOpen((v) => !v)}>
+                <Icon name="menu" />
+              </button>
+              {isMobileMenuOpen ? <div className="dn-mobile-menu-backdrop" onClick={() => setIsMobileMenuOpen(false)} /> : null}
+              {isMobileMenuOpen ? (
+                <nav className="dn-mobile-menu" aria-label="Mobile menu">
+                  <button onClick={() => { setIsMobileMenuOpen(false); onOpenSettings?.(); }}>
+                    <Icon name="settings" /> Settings
+                  </button>
+                  <button onClick={() => { setIsMobileMenuOpen(false); setModal("support"); }}>
+                    <Icon name="heart" /> Support Deana
+                  </button>
+                  <button onClick={() => { setIsMobileMenuOpen(false); setModal("help"); }}>
+                    <Icon name="help" /> Help
+                  </button>
+                </nav>
+              ) : null}
+            </div>
+          </header>
+
+          <div className="dn-tabbar-wrap">
+            <nav className="dn-tabbar" aria-label="Explorer sections">
+              {visibleTabs.map((tab) => (
+                <button key={tab.id} className={activeTab === tab.id ? "is-active" : ""} onClick={() => onTabChange?.(tab.id)}>{tab.label}</button>
+              ))}
+            </nav>
           </div>
-        </header>
 
-        <div className="dn-tabbar-wrap">
-          <nav className="dn-tabbar" aria-label="Explorer sections">
-            {visibleTabs.map((tab) => (
-              <button key={tab.id} className={activeTab === tab.id ? "is-active" : ""} onClick={() => onTabChange?.(tab.id)}>{tab.label}</button>
-            ))}
-          </nav>
-        </div>
-
-        {children}
+          {children}
         </div>
       </div>
       {modal === "privacy" ? (
@@ -266,6 +273,8 @@ export function SettingsModal({
   const [pendingByokModelId, setPendingByokModelId] = useState(initialByokModelId);
   const [pendingByokMaxMessageLength, setPendingByokMaxMessageLength] = useState(String(normalizeByokMaxMessageLength(initialByokMaxMessageLength)));
   const [pendingByokMaxFindings, setPendingByokMaxFindings] = useState(String(normalizeByokMaxFindings(initialByokMaxFindings)));
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const [pendingThemeMode, setPendingThemeMode] = useState<ThemeMode>(themeMode);
 
   const byokProviderPresets = providerPresetsForHost(window.location.hostname);
   const selectedPreset = pendingByokProviderId
@@ -279,8 +288,26 @@ export function SettingsModal({
           <h1 id="settings-title" className="dn-settings-modal__title">Settings</h1>
           <button className="dn-icon-button" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
         </div>
+        <div className="dn-settings-section">
+          <span className="dn-settings-label" id="settings-theme-label">Appearance</span>
+          <p className="dn-settings-description">Use your system preference or choose a fixed light or dark theme.</p>
+          <div className="dn-segmented-control" role="radiogroup" aria-labelledby="settings-theme-label">
+            {THEME_MODES.map((mode) => (
+              <label key={mode} className="dn-segmented-control__option">
+                <input
+                  type="radio"
+                  name="settings-theme"
+                  value={mode}
+                  checked={pendingThemeMode === mode}
+                  onChange={() => setPendingThemeMode(mode)}
+                />
+                <span>{THEME_MODE_LABELS[mode]}</span>
+              </label>
+            ))}
+          </div>
+        </div>
         {!pendingByokEnabled ? (
-          <div className="dn-settings-section">
+          <div className="dn-settings-section dn-settings-section--divided">
             <label className="dn-settings-label" htmlFor="settings-model-select">AI Model</label>
             <p className="dn-settings-description">Choose the AI model used for chat. Settings are saved locally in this browser.</p>
             <div className="dn-field dn-field--select dn-settings-field">
@@ -437,17 +464,21 @@ export function SettingsModal({
           <button
             className="dn-button dn-button--primary"
             type="button"
-            onClick={() => onSave({
-              modelId: pendingModel,
-              showReasoning: pendingShowReasoning,
-              byokEnabled: pendingByokEnabled,
-              byokProviderId: pendingByokEnabled ? selectedPreset.providerId : undefined,
-              byokApiKey: pendingByokEnabled ? pendingByokApiKey : undefined,
-              byokBaseUrl: pendingByokEnabled ? pendingByokBaseUrl : undefined,
-              byokModelId: pendingByokEnabled ? (pendingByokModelId.trim() || selectedPreset.defaultModel) : undefined,
-              byokMaxMessageLength: pendingByokEnabled ? normalizeByokMaxMessageLength(pendingByokMaxMessageLength) : undefined,
-              byokMaxFindings: pendingByokEnabled ? normalizeByokMaxFindings(pendingByokMaxFindings) : undefined,
-            })}
+            onClick={() => {
+              if (pendingThemeMode !== themeMode) setThemeMode(pendingThemeMode);
+              onSave({
+                modelId: pendingModel,
+                showReasoning: pendingShowReasoning,
+                byokEnabled: pendingByokEnabled,
+                byokProviderId: pendingByokEnabled ? selectedPreset.providerId : undefined,
+                byokApiKey: pendingByokEnabled ? pendingByokApiKey : undefined,
+                byokBaseUrl: pendingByokEnabled ? pendingByokBaseUrl : undefined,
+                byokModelId: pendingByokEnabled ? (pendingByokModelId.trim() || selectedPreset.defaultModel) : undefined,
+                byokMaxMessageLength: pendingByokEnabled ? normalizeByokMaxMessageLength(pendingByokMaxMessageLength) : undefined,
+                byokMaxFindings: pendingByokEnabled ? normalizeByokMaxFindings(pendingByokMaxFindings) : undefined,
+                themeMode: pendingThemeMode,
+              });
+            }}
           >
             Save
           </button>
@@ -1129,7 +1160,7 @@ const FindingCard = memo(function FindingCard({
 
   return (
     <button className={`dn-finding-card ${selected ? "is-selected" : ""} dn-finding-tone-${toneForEntry(entry)}`} onClick={handleClick}>
-        <span className="dn-finding-card__icon"><Icon name={iconForTab(entry.category)} /></span>
+      <span className="dn-finding-card__icon"><Icon name={iconForTab(entry.category)} /></span>
       <div className="dn-finding-card__main">
         <div className="dn-finding-card__meta">
           <span>{entry.sources[0]?.name ?? "Source"}</span>
