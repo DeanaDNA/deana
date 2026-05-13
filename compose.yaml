@@ -1,0 +1,10 @@
+services:
+  deana:
+    build: .
+    image: deana:local
+    ports:
+      - "8080:8080"
+    environment:
+      AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY:-}
+      DEANA_LLM_MODEL: ${DEANA_LLM_MODEL:-google/gemini-3-flash}
+      VITE_DEANA_MODEL_LIST: ${VITE_DEANA_MODEL_LIST:-google/gemini-3-flash,google/gemini-3.1-flash-lite-preview,openai/gpt-5.4-nano,openai/gpt-5-mini,deepseek/deepseek-v4-flash,deepseek/deepseek-v4-pro}

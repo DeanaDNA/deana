@@ -23,6 +23,7 @@ import {
   streamReportEntries,
 } from "./lib/storage";
 import { EVIDENCE_PACK_VERSION } from "./lib/evidencePack";
+import { saveSettings } from "./lib/settings";
 import {
   loadMarkerSummary,
   prewarmMarkerIndex,
@@ -515,8 +516,21 @@ function fetchCallsFor(path: string): unknown[][] {
   return vi.mocked(fetch).mock.calls.filter(([input]) => String(input).includes(path));
 }
 
+function mockAiStatus(enabled: boolean): void {
+  vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+    if (String(input).includes("/api/ai-status")) {
+      return new Response(JSON.stringify({ enabled }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ error: "Not mocked" }), { status: 404 });
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   nextWorkerResponse = { ok: true, data: parsed };
   nextEvidenceResponse = {
     type: "done",
@@ -906,15 +920,7 @@ describe("Deana app", () => {
   });
 
   it("hides the AI tab when AI Gateway credentials are unavailable", async () => {
-    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      if (String(input).includes("/api/ai-status")) {
-        return new Response(JSON.stringify({ enabled: false }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: "Not mocked" }), { status: 404 });
-    });
+    mockAiStatus(false);
     storedProfiles = [makeSavedProfile({ id: "profile-ai-disabled" })];
 
     renderApp("/explorer/profile-ai-disabled?tab=ai");
@@ -922,6 +928,23 @@ describe("Deana app", () => {
     await screen.findByText("Current report");
     await waitFor(() => expect(screen.getByTestId("location").textContent).toContain("tab=overview"));
     expect(screen.queryByRole("button", { name: "AI Chat" })).not.toBeInTheDocument();
+  });
+
+  it("shows the AI tab when BYOK credentials are configured locally", async () => {
+    mockAiStatus(false);
+    saveSettings({
+      byokEnabled: true,
+      byokApiKey: "sk-local",
+      byokModelId: "openai/gpt-5-mini",
+    });
+    storedProfiles = [makeSavedProfile({ id: "profile-ai-byok" })];
+
+    renderApp("/explorer/profile-ai-byok?tab=ai");
+
+    await screen.findByText(/AI chat sends report context off this device/i);
+    expect(screen.getByRole("button", { name: "AI Chat" })).toBeInTheDocument();
+    expect(screen.getByTestId("location").textContent).toBe("/explorer/profile-ai-byok?tab=ai");
+    expect(fetchCallsFor("/api/chat")).toHaveLength(0);
   });
 
   it("shows chat privacy details from the empty-state learn more button without the old banner", async () => {

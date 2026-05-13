@@ -67,6 +67,40 @@ bun run preview
 
 Use Bun for package scripts so local development matches the lockfile and CI workflow.
 
+## Container Install
+
+Deana can also run as a self-hosted container. The image serves the production Vite build, local evidence-pack assets, browser-history route fallbacks, and the same `/api` chat endpoints used by Vercel deployments.
+
+Run a published image:
+
+```bash
+docker run --rm -p 8080:8080 ghcr.io/stephenradford/deana:latest
+```
+
+Build and run from this checkout:
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:8080`. Raw DNA parsing, report storage, and evidence matching still happen locally in the browser. The container does not add a raw-DNA upload service.
+
+AI chat is included in the container, but first-party Gateway chat needs an AI Gateway API key because Vercel OIDC is only available on Vercel deployments:
+
+```bash
+AI_GATEWAY_API_KEY=... docker compose up --build
+```
+
+Optional runtime model configuration:
+
+```bash
+AI_GATEWAY_API_KEY=...
+DEANA_LLM_MODEL=google/gemini-3-flash
+VITE_DEANA_MODEL_LIST=google/gemini-3-flash,openai/gpt-5.4-nano,openai/gpt-5-mini
+```
+
+`VITE_DEANA_MODEL_LIST` is read by the container server at startup and exposed as public model-selector metadata through `/api/ai-status`; it does not expose secrets. If `AI_GATEWAY_API_KEY` is absent, the app hides first-party AI chat, while local report exploration continues to work.
+
 ## AI Chat Setup
 
 Deana uses the Vercel AI SDK v6 package set for opt-in Explorer chat:

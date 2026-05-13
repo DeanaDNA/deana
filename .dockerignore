@@ -1,0 +1,17 @@
+.git
+.codex
+.DS_Store
+.env
+.env.*
+.evidence-cache
+.vercel
+.vs
+coverage
+dist
+docs
+docs/evidence-candidates/dna-bulk-*.json
+docs/evidence-candidates/dna-seed-*.json
+docs/evidence-candidates/dna-seed-*/
+node_modules
+stats.html
+*.tsbuildinfo
