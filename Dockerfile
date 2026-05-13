@@ -8,7 +8,7 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 FROM deps AS build
-COPY index.html tsconfig*.json vite.config.ts vite.config.js vite.config.d.ts ./
+COPY index.html tsconfig*.json vite.config.ts ./
 COPY public ./public
 COPY src ./src
 COPY api ./api
