@@ -137,17 +137,37 @@ function trimAiHandoffPrompt(prompt: string): string {
   return `${prompt.slice(0, MAX_AI_HANDOFF_PROMPT_LENGTH - 1).trimEnd()}.`;
 }
 
-async function loadAiStatus(): Promise<boolean> {
+interface RuntimeAiStatus {
+  enabled: boolean;
+  models?: string[];
+}
+
+function normalizeStatusModels(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+
+  const models = Array.from(new Set(
+    value
+      .filter((model): model is string => typeof model === "string")
+      .map((model) => model.trim())
+      .filter(Boolean),
+  ));
+  return models.length > 0 ? models : undefined;
+}
+
+async function loadAiStatus(): Promise<RuntimeAiStatus> {
   try {
     const response = await fetch("/api/ai-status", {
       method: "GET",
       cache: "no-store",
     });
-    if (!response.ok) return false;
-    const body = await response.json() as { enabled?: unknown };
-    return body.enabled === true;
+    if (!response.ok) return { enabled: false };
+    const body = await response.json() as { enabled?: unknown; models?: unknown };
+    return {
+      enabled: body.enabled === true,
+      models: normalizeStatusModels(body.models),
+    };
   } catch {
-    return false;
+    return { enabled: false };
   }
 }
 
@@ -245,7 +265,15 @@ function isEvidencePackStale(profile: ProfileMeta | null): boolean {
   );
 }
 
-const availableModels = availableModelsFromEnv(import.meta.env as Record<string, string | undefined>);
+const bakedAvailableModels = availableModelsFromEnv(import.meta.env as Record<string, string | undefined>);
+
+function selectAvailableModel(preferredModel: string | undefined, models: string[]): string {
+  return preferredModel && models.includes(preferredModel) ? preferredModel : models[0] ?? "";
+}
+
+function sameModelList(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
 
 function byokStateFromSettings(settings: ReturnType<typeof loadSettings>) {
   return {
@@ -259,6 +287,12 @@ function byokStateFromSettings(settings: ReturnType<typeof loadSettings>) {
   };
 }
 
+type ByokState = ReturnType<typeof byokStateFromSettings>;
+
+function hasByokChatCredentials(byok: ByokState): boolean {
+  return byok.enabled && byok.apiKey.trim().length > 0;
+}
+
 export function ExplorerScreen({
   isLibraryReady,
 }: ExplorerScreenProps) {
@@ -267,19 +301,19 @@ export function ExplorerScreen({
   const [searchParams, setSearchParams] = useSearchParams();
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [profile, setProfile] = useState<ProfileMeta | null>(null);
-  const [isAiEnabled, setIsAiEnabled] = useState<boolean | null>(null);
+  const [initialSettings] = useState(() => loadSettings());
+  const [isGatewayAiEnabled, setIsGatewayAiEnabled] = useState<boolean | null>(null);
   const [pendingAiPrompt, setPendingAiPrompt] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [availableModels, setAvailableModels] = useState<string[]>(bakedAvailableModels);
   const [selectedModel, setSelectedModel] = useState<string>(() => {
-    const s = loadSettings();
-    return s.modelId && availableModels.includes(s.modelId) ? s.modelId : availableModels[0] ?? "";
+    return selectAvailableModel(initialSettings.modelId, bakedAvailableModels);
   });
   const [showReasoning, setShowReasoning] = useState<boolean>(() => {
-    const s = loadSettings();
-    return s.showReasoning !== false;
+    return initialSettings.showReasoning !== false;
   });
-  const [byok, setByok] = useState(() => {
-    return byokStateFromSettings(loadSettings());
+  const [byok, setByok] = useState<ByokState>(() => {
+    return byokStateFromSettings(initialSettings);
   });
   const openSettings = useCallback(() => setIsSettingsOpen(true), []);
   const previousTabRef = useRef<ExplorerTab | null>(null);
@@ -289,12 +323,28 @@ export function ExplorerScreen({
   const filters = useMemo(() => formatFilters(searchParams), [filterKey]);
   const category = categoryForTab(tab);
   const shouldRefreshEvidence = isEvidencePackStale(profile);
+  const canUseAiChat = isGatewayAiEnabled === true || hasByokChatCredentials(byok);
+  const byokProps = {
+    byokEnabled: byok.enabled,
+    byokProviderId: byok.providerId,
+    byokApiKey: byok.apiKey,
+    byokBaseUrl: byok.baseUrl,
+    byokModelId: byok.modelId,
+    byokMaxMessageLength: byok.maxMessageLength,
+    byokMaxFindings: byok.maxFindings,
+  };
 
   useEffect(() => {
     let cancelled = false;
 
-    void loadAiStatus().then((enabled) => {
-      if (!cancelled) setIsAiEnabled(enabled);
+    void loadAiStatus().then((status) => {
+      if (cancelled) return;
+      setIsGatewayAiEnabled(status.enabled);
+      const runtimeModels = status.models;
+      if (runtimeModels) {
+        setAvailableModels((current) => sameModelList(current, runtimeModels) ? current : runtimeModels);
+        setSelectedModel((current) => selectAvailableModel(current, runtimeModels));
+      }
     });
 
     return () => {
@@ -303,10 +353,10 @@ export function ExplorerScreen({
   }, []);
 
   useEffect(() => {
-    if (isAiEnabled === false && tab === "ai") {
+    if (isGatewayAiEnabled === false && !canUseAiChat && tab === "ai") {
       updateSearchParams(searchParams, { tab: "overview", selected: null }, setSearchParams);
     }
-  }, [isAiEnabled, searchParams, setSearchParams, tab]);
+  }, [canUseAiChat, isGatewayAiEnabled, searchParams, setSearchParams, tab]);
 
   useEffect(() => {
     let cancelled = false;
@@ -363,7 +413,7 @@ export function ExplorerScreen({
   }
 
   function setTab(nextTab: ExplorerTab) {
-    if (nextTab === "ai" && isAiEnabled !== true) return;
+    if (nextTab === "ai" && !canUseAiChat) return;
     if (nextTab === tab) return;
     updateSearchParams(
       searchParams,
@@ -373,7 +423,7 @@ export function ExplorerScreen({
   }
 
   function openAiWithPrompt(prompt: string) {
-    if (isAiEnabled !== true) return;
+    if (!canUseAiChat) return;
     setPendingAiPrompt(prompt);
     updateSearchParams(
       searchParams,
@@ -396,89 +446,95 @@ export function ExplorerScreen({
     return trimAiHandoffPrompt(`Tell me more about this Deana finding: ${finding.title}.${genes}${markers ? ` Markers: ${markers}.` : ""} Explain what it means, what the marker or gene does, what evidence supports it, and what limitations I should keep in mind. Use only my report context and browser-local report search if needed.`);
   }
 
-  const askAiAboutMarker = isAiEnabled === true
+  const askAiAboutMarker = canUseAiChat
     ? (marker: StoredMarkerSummary) => openAiWithPrompt(promptForMarker(marker))
     : undefined;
-  const askAiAboutFinding = isAiEnabled === true
+  const askAiAboutFinding = canUseAiChat
     ? (finding: StoredReportEntry) => openAiWithPrompt(promptForFinding(finding))
     : undefined;
 
-  return (
-    <>
-    <ExplorerShell
-      report={toReportCard(profile)}
-      activeTab={tab}
-      isAiEnabled={isAiEnabled === true}
-      onTabChange={setTab}
-      onBackHome={() => navigate("/")}
-      onOpenSettings={openSettings}
-    >
-      {tab === "overview" ? (
-        <OverviewContent profile={profile} onExploreCategory={setTab} />
-      ) : tab === "ai" && isAiEnabled === true ? (
+  function renderExplorerContent(currentProfile: ProfileMeta) {
+    if (tab === "overview") {
+      return <OverviewContent profile={currentProfile} onExploreCategory={setTab} />;
+    }
+
+    if (tab === "ai") {
+      return canUseAiChat ? (
         <ExplorerAiChat
-          profile={profile}
+          profile={currentProfile}
           visibleEntries={[]}
           selectedEntry={null}
           pendingPrompt={pendingAiPrompt}
           onPendingPromptConsumed={() => setPendingAiPrompt(null)}
           selectedModel={selectedModel}
           showReasoning={showReasoning}
-          byokEnabled={byok.enabled}
-          byokProviderId={byok.providerId}
-          byokApiKey={byok.apiKey}
-          byokBaseUrl={byok.baseUrl}
-          byokModelId={byok.modelId}
-          byokMaxMessageLength={byok.maxMessageLength}
-          byokMaxFindings={byok.maxFindings}
+          {...byokProps}
           onOpenSettings={openSettings}
         />
-      ) : tab === "ai" ? (
-        <OverviewContent profile={profile} onExploreCategory={setTab} />
-      ) : tab === "markers" ? (
+      ) : (
+        <OverviewContent profile={currentProfile} onExploreCategory={setTab} />
+      );
+    }
+
+    if (tab === "markers") {
+      return (
         <MarkersExplorerPane
-          key={`${profile.id}:markers`}
-          profile={profile}
+          key={`${currentProfile.id}:markers`}
+          profile={currentProfile}
           searchParams={searchParams}
           setSearchParams={setSearchParams}
           onAskAiAboutMarker={askAiAboutMarker}
           onAskAiAboutFinding={askAiAboutFinding}
         />
-      ) : category ? (
+      );
+    }
+
+    if (category) {
+      return (
         <CategoryExplorerPane
-          key={`${profile.id}:${category}`}
+          key={`${currentProfile.id}:${category}`}
           activeTab={category}
-          profile={profile}
-          facets={profile.report.categoryFacets[category]}
+          profile={currentProfile}
+          facets={currentProfile.report.categoryFacets[category]}
           filters={filters}
           searchParams={searchParams}
           setSearchParams={setSearchParams}
           onAskAiAboutFinding={askAiAboutFinding}
         />
+      );
+    }
+
+    return null;
+  }
+
+  return (
+    <>
+      <ExplorerShell
+        report={toReportCard(profile)}
+        activeTab={tab}
+        isAiEnabled={canUseAiChat}
+        onTabChange={setTab}
+        onBackHome={() => navigate("/")}
+        onOpenSettings={openSettings}
+      >
+        {renderExplorerContent(profile)}
+      </ExplorerShell>
+      {isSettingsOpen ? (
+        <SettingsModal
+          selectedModel={selectedModel}
+          availableModels={availableModels}
+          showReasoning={showReasoning}
+          {...byokProps}
+          onSave={(settings) => {
+            saveSettings(settings);
+            setSelectedModel(selectAvailableModel(settings.modelId, availableModels));
+            setShowReasoning(settings.showReasoning !== false);
+            setByok(byokStateFromSettings(settings));
+            setIsSettingsOpen(false);
+          }}
+          onClose={() => setIsSettingsOpen(false)}
+        />
       ) : null}
-    </ExplorerShell>
-    {isSettingsOpen ? (
-      <SettingsModal
-        selectedModel={selectedModel}
-        availableModels={availableModels}
-        showReasoning={showReasoning}
-        byokEnabled={byok.enabled}
-        byokProviderId={byok.providerId}
-        byokApiKey={byok.apiKey}
-        byokBaseUrl={byok.baseUrl}
-        byokModelId={byok.modelId}
-        byokMaxMessageLength={byok.maxMessageLength}
-        byokMaxFindings={byok.maxFindings}
-        onSave={(settings) => {
-          saveSettings(settings);
-          setSelectedModel(settings.modelId ?? availableModels[0] ?? "");
-          setShowReasoning(settings.showReasoning !== false);
-          setByok(byokStateFromSettings(settings));
-          setIsSettingsOpen(false);
-        }}
-        onClose={() => setIsSettingsOpen(false)}
-      />
-    ) : null}
     </>
   );
 }
