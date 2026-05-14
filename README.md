@@ -74,7 +74,7 @@ Deana can also run as a self-hosted container. The image serves the production V
 Run a published image:
 
 ```bash
-docker run --rm -p 8080:8080 ghcr.io/deana/deana:latest
+docker run --rm -p 8080:8080 ghcr.io/deanadna/deana:latest
 ```
 
 Build and run from this checkout:
