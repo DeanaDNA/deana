@@ -1,0 +1,1901 @@
+{
+  "version": "2026-06-core",
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-01T09:45:26.033Z",
+  "shardStrategy": "rsid-modulo",
+  "shardModulo": 256,
+  "shards": [
+    {
+      "id": "m000",
+      "recordsPath": "shards/m000.json",
+      "recordsSha256": "1b202f1fffc6985eb8a370f7a9b4bf8c3408510e91441d16b1fa16e4d8e8b2fa",
+      "recordCount": 1071,
+      "bucket": 0
+    },
+    {
+      "id": "m001",
+      "recordsPath": "shards/m001.json",
+      "recordsSha256": "21dfec13f74d2a4e4b3188c94031125ced52c450793e0254ab74b2a85beba647",
+      "recordCount": 1314,
+      "bucket": 1
+    },
+    {
+      "id": "m002",
+      "recordsPath": "shards/m002.json",
+      "recordsSha256": "0050a38b169048a2065724fe478138146426850e036637bf4cd9baea69a51670",
+      "recordCount": 1064,
+      "bucket": 2
+    },
+    {
+      "id": "m003",
+      "recordsPath": "shards/m003.json",
+      "recordsSha256": "df05e34448a1ba30fdacebacb35c0ef18ea96075f1b586fb914ef37dfdb49c0b",
+      "recordCount": 1056,
+      "bucket": 3
+    },
+    {
+      "id": "m004",
+      "recordsPath": "shards/m004.json",
+      "recordsSha256": "2bfcf349ef1c9f9ab762281808d4913aee13be83c49706da9dc587221f2e686c",
+      "recordCount": 1052,
+      "bucket": 4
+    },
+    {
+      "id": "m005",
+      "recordsPath": "shards/m005.json",
+      "recordsSha256": "ff4bcbcba459526ed7dd7d74e48125074a7a81b385e6f7f8ae27712947759809",
+      "recordCount": 1095,
+      "bucket": 5
+    },
+    {
+      "id": "m006",
+      "recordsPath": "shards/m006.json",
+      "recordsSha256": "1ff927eda47b5d90cf75ee16dd2a34eae3e2691b37e8e9582aa8f4324d21e8b4",
+      "recordCount": 1110,
+      "bucket": 6
+    },
+    {
+      "id": "m007",
+      "recordsPath": "shards/m007.json",
+      "recordsSha256": "82aae4605c7ab788ca4a997c42bc450ce94d987b217c9741c39ca240d523a74b",
+      "recordCount": 1061,
+      "bucket": 7
+    },
+    {
+      "id": "m008",
+      "recordsPath": "shards/m008.json",
+      "recordsSha256": "b97d36807a0137f4e5d3c1fb76db3512629aea1fc6b521574fc35cdb686c462c",
+      "recordCount": 1082,
+      "bucket": 8
+    },
+    {
+      "id": "m009",
+      "recordsPath": "shards/m009.json",
+      "recordsSha256": "f279e936c7ed3c7804151ced96490182dcee0e0e48b1ce2296539366106f04f4",
+      "recordCount": 1046,
+      "bucket": 9
+    },
+    {
+      "id": "m010",
+      "recordsPath": "shards/m010.json",
+      "recordsSha256": "f68c9c66f325795326dfc28e51ab82fec698427b2419661e77f2b414acc6d1f4",
+      "recordCount": 1079,
+      "bucket": 10
+    },
+    {
+      "id": "m011",
+      "recordsPath": "shards/m011.json",
+      "recordsSha256": "701e7f8c51eff2c567be01545b368089e80f32057b0fb2cdd3c37bd3b3d8b4c4",
+      "recordCount": 1038,
+      "bucket": 11
+    },
+    {
+      "id": "m012",
+      "recordsPath": "shards/m012.json",
+      "recordsSha256": "14d1e9b01cc908208a0f233003894494df757900199d89f75f351602446c9deb",
+      "recordCount": 1058,
+      "bucket": 12
+    },
+    {
+      "id": "m013",
+      "recordsPath": "shards/m013.json",
+      "recordsSha256": "fd042e2e966f7d423b3dd9217a94eaa2c57ee57e08790683ce599e4610e34100",
+      "recordCount": 1105,
+      "bucket": 13
+    },
+    {
+      "id": "m014",
+      "recordsPath": "shards/m014.json",
+      "recordsSha256": "0a430a39138a6b323ce4bd20e4ca7a484c963cf3bb3bb6a0013cb6c59e455b49",
+      "recordCount": 1075,
+      "bucket": 14
+    },
+    {
+      "id": "m015",
+      "recordsPath": "shards/m015.json",
+      "recordsSha256": "b6a954d1b0113fb4bac7aeab917c04e3dd96f82374d47b0fade002195fad0e3f",
+      "recordCount": 1132,
+      "bucket": 15
+    },
+    {
+      "id": "m016",
+      "recordsPath": "shards/m016.json",
+      "recordsSha256": "1356eca004c6da419bfb6316ed10e00f77ff25f9c5634bb516436337381765e1",
+      "recordCount": 1057,
+      "bucket": 16
+    },
+    {
+      "id": "m017",
+      "recordsPath": "shards/m017.json",
+      "recordsSha256": "f61842c5b40d8879a066df22cc769d8cafbc96beff47c26ca839a7d66fe869df",
+      "recordCount": 1125,
+      "bucket": 17
+    },
+    {
+      "id": "m018",
+      "recordsPath": "shards/m018.json",
+      "recordsSha256": "c14b45dd6a8707d82eae7b4902d21b480c363f423b5bdbab04a1388f326fa608",
+      "recordCount": 1231,
+      "bucket": 18
+    },
+    {
+      "id": "m019",
+      "recordsPath": "shards/m019.json",
+      "recordsSha256": "1d0eb640583740f00f35a0b317600e623098b12623d65828689788de5d4691dd",
+      "recordCount": 1168,
+      "bucket": 19
+    },
+    {
+      "id": "m020",
+      "recordsPath": "shards/m020.json",
+      "recordsSha256": "820091f24fded12abfb8134cf772596a0b6a234b0984c533fdd57029c7cdd8b4",
+      "recordCount": 1111,
+      "bucket": 20
+    },
+    {
+      "id": "m021",
+      "recordsPath": "shards/m021.json",
+      "recordsSha256": "295ddfc94238be17d4f1a3116964825f1c80cec7992f5873d1edf37482654da7",
+      "recordCount": 1180,
+      "bucket": 21
+    },
+    {
+      "id": "m022",
+      "recordsPath": "shards/m022.json",
+      "recordsSha256": "351a61531547cf4d43763665bfc2556bc3983bd8fb09c7516f7e2a2fb77d1454",
+      "recordCount": 1046,
+      "bucket": 22
+    },
+    {
+      "id": "m023",
+      "recordsPath": "shards/m023.json",
+      "recordsSha256": "6356813cea1629d304ba0cb731d7a0cd5be41acc2ff9579806d053ba639ecc61",
+      "recordCount": 1012,
+      "bucket": 23
+    },
+    {
+      "id": "m024",
+      "recordsPath": "shards/m024.json",
+      "recordsSha256": "0da2800a07e1468d5b81caa34637623ee9e6c5026b7447b3e46f50f46ebd010f",
+      "recordCount": 1102,
+      "bucket": 24
+    },
+    {
+      "id": "m025",
+      "recordsPath": "shards/m025.json",
+      "recordsSha256": "37181e1975b057c8af975cd131796c4a775039b6c6273f2ab2c15d09d9313685",
+      "recordCount": 1175,
+      "bucket": 25
+    },
+    {
+      "id": "m026",
+      "recordsPath": "shards/m026.json",
+      "recordsSha256": "7180573359b4a44406a193a14ab8a82f14ed65c7a6c16a5812f1b673eae07f2f",
+      "recordCount": 1122,
+      "bucket": 26
+    },
+    {
+      "id": "m027",
+      "recordsPath": "shards/m027.json",
+      "recordsSha256": "f25a41fe797f7faa07ec7f1a818412357625388c515159af8bb8a4fc5d29d243",
+      "recordCount": 1127,
+      "bucket": 27
+    },
+    {
+      "id": "m028",
+      "recordsPath": "shards/m028.json",
+      "recordsSha256": "5c42a8f7cc1dcec0bf6098ad5577768746d52d97c88b2105afe745f29d306276",
+      "recordCount": 1091,
+      "bucket": 28
+    },
+    {
+      "id": "m029",
+      "recordsPath": "shards/m029.json",
+      "recordsSha256": "d8a643bf38ec057a76536de78a740db7da927a44138fd0ab80691781f6b5c658",
+      "recordCount": 1221,
+      "bucket": 29
+    },
+    {
+      "id": "m030",
+      "recordsPath": "shards/m030.json",
+      "recordsSha256": "319e5207679bcd7d51b77b1fb5195db80e528e363fa90811f7eb7fe3679e68ff",
+      "recordCount": 1063,
+      "bucket": 30
+    },
+    {
+      "id": "m031",
+      "recordsPath": "shards/m031.json",
+      "recordsSha256": "b86fc4fcab0dba1f1bd0317ec579fbf193fe2b6df2063faa28a54a02928da6b3",
+      "recordCount": 1112,
+      "bucket": 31
+    },
+    {
+      "id": "m032",
+      "recordsPath": "shards/m032.json",
+      "recordsSha256": "38d1784f56d74ddd698b0b9060ec0766eaea20cbe0b2fb9b76e2e8d34ec716c8",
+      "recordCount": 1050,
+      "bucket": 32
+    },
+    {
+      "id": "m033",
+      "recordsPath": "shards/m033.json",
+      "recordsSha256": "ebe9115410325a3f15c3dfe2bc384755075782e95dbd206748994768a7a931e4",
+      "recordCount": 963,
+      "bucket": 33
+    },
+    {
+      "id": "m034",
+      "recordsPath": "shards/m034.json",
+      "recordsSha256": "bd42dd390d5a4433e0f8768bc504189ee7a4e45e6a19f09505fe1ede7a198988",
+      "recordCount": 1043,
+      "bucket": 34
+    },
+    {
+      "id": "m035",
+      "recordsPath": "shards/m035.json",
+      "recordsSha256": "4fcfbe92e8cda6d977028d781ce766c37207e08e84076197505e5946f8f98c02",
+      "recordCount": 1053,
+      "bucket": 35
+    },
+    {
+      "id": "m036",
+      "recordsPath": "shards/m036.json",
+      "recordsSha256": "dd6cd24ff7e0260a2261c6a52f8cbcab6b68f015f12a2fbe9d7431bee098eafd",
+      "recordCount": 1067,
+      "bucket": 36
+    },
+    {
+      "id": "m037",
+      "recordsPath": "shards/m037.json",
+      "recordsSha256": "5f7fefe60a63d1d0129d143eb274ea6730c1b2bfe39fde07bfc1f12166e083eb",
+      "recordCount": 1112,
+      "bucket": 37
+    },
+    {
+      "id": "m038",
+      "recordsPath": "shards/m038.json",
+      "recordsSha256": "95359e5eb30b6c5a1eb0aa2e33190af09013f5b014352c784c5060be1df3fe5d",
+      "recordCount": 1113,
+      "bucket": 38
+    },
+    {
+      "id": "m039",
+      "recordsPath": "shards/m039.json",
+      "recordsSha256": "f6cb0d8ab45e134f216fbaad9f4e44acbcb47415021686929e290df5fcba7949",
+      "recordCount": 1057,
+      "bucket": 39
+    },
+    {
+      "id": "m040",
+      "recordsPath": "shards/m040.json",
+      "recordsSha256": "a9042bfaa7bd01b9861b5e9d59a62ae10029f8cdd478eff6713239102e7f3059",
+      "recordCount": 1107,
+      "bucket": 40
+    },
+    {
+      "id": "m041",
+      "recordsPath": "shards/m041.json",
+      "recordsSha256": "7a78c23923ea49ad34ba8877d13cedfe747ebd504cea817a552c5d6b0f2b8a20",
+      "recordCount": 1085,
+      "bucket": 41
+    },
+    {
+      "id": "m042",
+      "recordsPath": "shards/m042.json",
+      "recordsSha256": "81d9f94f01a2a5039c204d6d84ac48ce42c85ffdb40eba7099a5370614468545",
+      "recordCount": 1079,
+      "bucket": 42
+    },
+    {
+      "id": "m043",
+      "recordsPath": "shards/m043.json",
+      "recordsSha256": "a49c220f0ca94aab8c2d76cde7be87aced3ef0c96284a33ec572e9bc9e60cbd3",
+      "recordCount": 980,
+      "bucket": 43
+    },
+    {
+      "id": "m044",
+      "recordsPath": "shards/m044.json",
+      "recordsSha256": "c33bde6e79669ba538d964ad67a6d797479cc8cd28847e6999812956f1d543be",
+      "recordCount": 1097,
+      "bucket": 44
+    },
+    {
+      "id": "m045",
+      "recordsPath": "shards/m045.json",
+      "recordsSha256": "1e5a130c99eeb70e37f33125a7ba83c5a088f2c22f40f250e27fd8527822ab41",
+      "recordCount": 1125,
+      "bucket": 45
+    },
+    {
+      "id": "m046",
+      "recordsPath": "shards/m046.json",
+      "recordsSha256": "4a03e49688c141e4ae6770cb727ca49908c3b13f926fe7f4465b31f3eb1a53da",
+      "recordCount": 1351,
+      "bucket": 46
+    },
+    {
+      "id": "m047",
+      "recordsPath": "shards/m047.json",
+      "recordsSha256": "5ad1edc2d5a0c4be23642ea10173e9fed51873ec3405818f48287f0091ee892b",
+      "recordCount": 1077,
+      "bucket": 47
+    },
+    {
+      "id": "m048",
+      "recordsPath": "shards/m048.json",
+      "recordsSha256": "9c55a3335f6140140f429992560a7538a834bb3c986b241c6a4780b3cdceff79",
+      "recordCount": 1099,
+      "bucket": 48
+    },
+    {
+      "id": "m049",
+      "recordsPath": "shards/m049.json",
+      "recordsSha256": "e4571221b7fc4bd47c5a0e0bbcb668ed05148a13c419cabcf5c29f63586b0862",
+      "recordCount": 1105,
+      "bucket": 49
+    },
+    {
+      "id": "m050",
+      "recordsPath": "shards/m050.json",
+      "recordsSha256": "1cfae4a50b99f718f189968d796b9719e5e0c02b94b24de0aa2ec2ea9f9b25bb",
+      "recordCount": 1121,
+      "bucket": 50
+    },
+    {
+      "id": "m051",
+      "recordsPath": "shards/m051.json",
+      "recordsSha256": "158b1a8248329a46baaa22511a9e50fec420a4e29adfab6045776feaa80425f9",
+      "recordCount": 1023,
+      "bucket": 51
+    },
+    {
+      "id": "m052",
+      "recordsPath": "shards/m052.json",
+      "recordsSha256": "19e3853170d48a43f980e57424f4b0310e928da3d668ca4c140bb72c0b156e5c",
+      "recordCount": 1063,
+      "bucket": 52
+    },
+    {
+      "id": "m053",
+      "recordsPath": "shards/m053.json",
+      "recordsSha256": "784e32ffa0eb313b8cfc4bd9ecab05396d09cb5b5988f090d77f6cb99c94ce23",
+      "recordCount": 1067,
+      "bucket": 53
+    },
+    {
+      "id": "m054",
+      "recordsPath": "shards/m054.json",
+      "recordsSha256": "232f7ca6e03c95652a972753c360ad27fbf1092c01ac789a5e7d1ccd55e5a8a7",
+      "recordCount": 1003,
+      "bucket": 54
+    },
+    {
+      "id": "m055",
+      "recordsPath": "shards/m055.json",
+      "recordsSha256": "c8b97d64302461e58dc7433b0b210657523b5cbb4256f214e388c26a19de4729",
+      "recordCount": 1067,
+      "bucket": 55
+    },
+    {
+      "id": "m056",
+      "recordsPath": "shards/m056.json",
+      "recordsSha256": "85b2c84069d5672c7c376902e3e7851f9245614608f38ea76334db9a3541ddcf",
+      "recordCount": 1072,
+      "bucket": 56
+    },
+    {
+      "id": "m057",
+      "recordsPath": "shards/m057.json",
+      "recordsSha256": "091eef7ba26e67a7d6577776c1ea570a2a4302edac7bb4457805dd6ee5ba23aa",
+      "recordCount": 1083,
+      "bucket": 57
+    },
+    {
+      "id": "m058",
+      "recordsPath": "shards/m058.json",
+      "recordsSha256": "8bd8c3a55e51d2887f968f70bd19e31f53ef77723acd43caa6719e25b0c95746",
+      "recordCount": 1200,
+      "bucket": 58
+    },
+    {
+      "id": "m059",
+      "recordsPath": "shards/m059.json",
+      "recordsSha256": "2bbb10f48384d9dad35a2fb0247de39821aecd9f351675205495a27308c06bcb",
+      "recordCount": 1052,
+      "bucket": 59
+    },
+    {
+      "id": "m060",
+      "recordsPath": "shards/m060.json",
+      "recordsSha256": "6e7ab07ab480a5cc8d45ac31927f102cf0495254518b55459328d974cf58cf9e",
+      "recordCount": 1071,
+      "bucket": 60
+    },
+    {
+      "id": "m061",
+      "recordsPath": "shards/m061.json",
+      "recordsSha256": "07845c3e23d2d22bcecdf47690041d19b21fd6e2c429418326d6f3e83a4c3061",
+      "recordCount": 991,
+      "bucket": 61
+    },
+    {
+      "id": "m062",
+      "recordsPath": "shards/m062.json",
+      "recordsSha256": "e2d2df9c22f49e5bb89b4ae094912580bfcc6372d5d10cb0dcc56418888ca135",
+      "recordCount": 1127,
+      "bucket": 62
+    },
+    {
+      "id": "m063",
+      "recordsPath": "shards/m063.json",
+      "recordsSha256": "304d1c1eb714e64d76e7f45438932ccdb4fa751f501cd0407b559dbb7068d287",
+      "recordCount": 1134,
+      "bucket": 63
+    },
+    {
+      "id": "m064",
+      "recordsPath": "shards/m064.json",
+      "recordsSha256": "e22482897c9c4bf79f672fc2dd04110e89d40a98fa0ef282afbc4ecaa4460952",
+      "recordCount": 1167,
+      "bucket": 64
+    },
+    {
+      "id": "m065",
+      "recordsPath": "shards/m065.json",
+      "recordsSha256": "510e88b76c4c2772a714d8744e39d51c40ec166f2dfa711f0453b3a60ae4a7ac",
+      "recordCount": 1094,
+      "bucket": 65
+    },
+    {
+      "id": "m066",
+      "recordsPath": "shards/m066.json",
+      "recordsSha256": "65b25a5330ea1bff46d877031515f206287806a48bf809c7c58ff4c51c1fa329",
+      "recordCount": 1134,
+      "bucket": 66
+    },
+    {
+      "id": "m067",
+      "recordsPath": "shards/m067.json",
+      "recordsSha256": "b6f60c76cb6a9904330a7b71f1649938ad7eed66c8431e1aa40eb3f856560532",
+      "recordCount": 1093,
+      "bucket": 67
+    },
+    {
+      "id": "m068",
+      "recordsPath": "shards/m068.json",
+      "recordsSha256": "d3d8fbc5690a7d1c0c16a7c5898b3664af4025a346a9dc00429ddb1d990c7251",
+      "recordCount": 1053,
+      "bucket": 68
+    },
+    {
+      "id": "m069",
+      "recordsPath": "shards/m069.json",
+      "recordsSha256": "fd69c6c3d1aac352913fe1a175a29bdca6c21b532fa771694d86f72543c02712",
+      "recordCount": 980,
+      "bucket": 69
+    },
+    {
+      "id": "m070",
+      "recordsPath": "shards/m070.json",
+      "recordsSha256": "f077b7720a656aec8bd3fdf72d9a9e2a32930b76c2299e20a611c0215a0f56a3",
+      "recordCount": 1056,
+      "bucket": 70
+    },
+    {
+      "id": "m071",
+      "recordsPath": "shards/m071.json",
+      "recordsSha256": "a34ce5fe2d062d60fbf644725684d7c25b20915f27283269c6ead1e71fb13ae0",
+      "recordCount": 1022,
+      "bucket": 71
+    },
+    {
+      "id": "m072",
+      "recordsPath": "shards/m072.json",
+      "recordsSha256": "9fa789655b1efde46d730e6d7e96ed41bf06de62de62aefe41f60f9bb43c7368",
+      "recordCount": 1123,
+      "bucket": 72
+    },
+    {
+      "id": "m073",
+      "recordsPath": "shards/m073.json",
+      "recordsSha256": "0572e8202605893aa2f225cc205c338eb9a63015cd0b0eac05b9cb89eea10698",
+      "recordCount": 1124,
+      "bucket": 73
+    },
+    {
+      "id": "m074",
+      "recordsPath": "shards/m074.json",
+      "recordsSha256": "5890aa5216c6fe04a716b7a50e5ac860035094f1f8fd0fce39c3a696edd86c3b",
+      "recordCount": 1205,
+      "bucket": 74
+    },
+    {
+      "id": "m075",
+      "recordsPath": "shards/m075.json",
+      "recordsSha256": "9040dd9a93df7101c13c6e3aedd6ef3c33f396d3a91774892994fe61b428ab00",
+      "recordCount": 1064,
+      "bucket": 75
+    },
+    {
+      "id": "m076",
+      "recordsPath": "shards/m076.json",
+      "recordsSha256": "a7625fae84f93d2fce689b34b039644eebac676335dd14cfeed84a1694d0047d",
+      "recordCount": 1138,
+      "bucket": 76
+    },
+    {
+      "id": "m077",
+      "recordsPath": "shards/m077.json",
+      "recordsSha256": "16cb8b5e452d429f39d4146c6a13c0c2681aad038101092ef199a843e00e91e9",
+      "recordCount": 1091,
+      "bucket": 77
+    },
+    {
+      "id": "m078",
+      "recordsPath": "shards/m078.json",
+      "recordsSha256": "b4cb67f734861d037d3b360061d8d37a59c1603a26dd125af410a54a0854bfb8",
+      "recordCount": 1170,
+      "bucket": 78
+    },
+    {
+      "id": "m079",
+      "recordsPath": "shards/m079.json",
+      "recordsSha256": "eb512b08b8000342a86b15b1d02b0df2ab67965971be721ddba29ce6ef573acf",
+      "recordCount": 1070,
+      "bucket": 79
+    },
+    {
+      "id": "m080",
+      "recordsPath": "shards/m080.json",
+      "recordsSha256": "5647b8e824f42b319504117694104562db79dd549858db87a6c63efafde8ec18",
+      "recordCount": 1121,
+      "bucket": 80
+    },
+    {
+      "id": "m081",
+      "recordsPath": "shards/m081.json",
+      "recordsSha256": "81d1b988b3092428f9d42e21bb52b79458ea507bbcd558a72e7cd0cbb04d961f",
+      "recordCount": 1062,
+      "bucket": 81
+    },
+    {
+      "id": "m082",
+      "recordsPath": "shards/m082.json",
+      "recordsSha256": "babe7d21d8914a3503cbd877cf40319a8243e72de1a22287f1f8470085f2436c",
+      "recordCount": 1153,
+      "bucket": 82
+    },
+    {
+      "id": "m083",
+      "recordsPath": "shards/m083.json",
+      "recordsSha256": "1aef6b55f2e46caa133c360987cb7af3048cac1cda748be11efb2a51fd6a72f0",
+      "recordCount": 1182,
+      "bucket": 83
+    },
+    {
+      "id": "m084",
+      "recordsPath": "shards/m084.json",
+      "recordsSha256": "7d151ea8d1a0369994016229afb7338f67882a5a15e747377c3da85a35dd1b85",
+      "recordCount": 1073,
+      "bucket": 84
+    },
+    {
+      "id": "m085",
+      "recordsPath": "shards/m085.json",
+      "recordsSha256": "94c89c019a0b12fbf1bc5d0b2534715c10a06cfc4ac34ff4ee21b23021e0113d",
+      "recordCount": 1047,
+      "bucket": 85
+    },
+    {
+      "id": "m086",
+      "recordsPath": "shards/m086.json",
+      "recordsSha256": "ce0d063418fff71b5f9da666fcab09efeeda91a07c5986652233dfcc59909bfd",
+      "recordCount": 1014,
+      "bucket": 86
+    },
+    {
+      "id": "m087",
+      "recordsPath": "shards/m087.json",
+      "recordsSha256": "0b38ebeb39fdb4472b7a24b01a2b1d181a24df09979185d57afb64cba473cecf",
+      "recordCount": 1062,
+      "bucket": 87
+    },
+    {
+      "id": "m088",
+      "recordsPath": "shards/m088.json",
+      "recordsSha256": "0ab2688a19e3c4a3f1fa24c17df47596ad8628d49f9382ea962e5b286af50f33",
+      "recordCount": 1150,
+      "bucket": 88
+    },
+    {
+      "id": "m089",
+      "recordsPath": "shards/m089.json",
+      "recordsSha256": "a7ad6ab08e829790e91648dd3d38b698f2b7e7174e9242c9bcfa34f24591a408",
+      "recordCount": 1040,
+      "bucket": 89
+    },
+    {
+      "id": "m090",
+      "recordsPath": "shards/m090.json",
+      "recordsSha256": "bbf0b008a9201a60f18e2ea27e1836a4e73eb7b9a5eeef961c001b05966a9c78",
+      "recordCount": 1101,
+      "bucket": 90
+    },
+    {
+      "id": "m091",
+      "recordsPath": "shards/m091.json",
+      "recordsSha256": "76afe479552d7a888c283835ea73c11a4a4501836403ea8afb7dccd81ccc7f02",
+      "recordCount": 1085,
+      "bucket": 91
+    },
+    {
+      "id": "m092",
+      "recordsPath": "shards/m092.json",
+      "recordsSha256": "c166de00918811d19d8ac9edb4e433649cf700a2b3d602832cf6f4f64399d548",
+      "recordCount": 1044,
+      "bucket": 92
+    },
+    {
+      "id": "m093",
+      "recordsPath": "shards/m093.json",
+      "recordsSha256": "7d19a04ec003862a60133b9eeb369e3afc3a03b055e6108b00fbc83e0e4683f2",
+      "recordCount": 1065,
+      "bucket": 93
+    },
+    {
+      "id": "m094",
+      "recordsPath": "shards/m094.json",
+      "recordsSha256": "2840f973be757c4b137bc5a1c9f593fd982455f28ff9af6541e566fbea9e7115",
+      "recordCount": 1037,
+      "bucket": 94
+    },
+    {
+      "id": "m095",
+      "recordsPath": "shards/m095.json",
+      "recordsSha256": "9b8af63171e69b390d338656ba2528c74e8b1af7c061467a9e98f18556e010ac",
+      "recordCount": 1127,
+      "bucket": 95
+    },
+    {
+      "id": "m096",
+      "recordsPath": "shards/m096.json",
+      "recordsSha256": "c0409bb83eb70fd5e3f096dc6353787ecfe45c3c53b9f24b6f510eec16f80d6c",
+      "recordCount": 1079,
+      "bucket": 96
+    },
+    {
+      "id": "m097",
+      "recordsPath": "shards/m097.json",
+      "recordsSha256": "8c54e16587335e8435ad8b58a4b1fca0931e64a9e27e8c1b3ccdb93fad283a36",
+      "recordCount": 1063,
+      "bucket": 97
+    },
+    {
+      "id": "m098",
+      "recordsPath": "shards/m098.json",
+      "recordsSha256": "a2fe8738e7d73f8afe8d96dd8f19285391a8bbae456baed128adefca05c17ba4",
+      "recordCount": 1032,
+      "bucket": 98
+    },
+    {
+      "id": "m099",
+      "recordsPath": "shards/m099.json",
+      "recordsSha256": "5c281dc0bc45114816ba5d22066e77ab0eb6bd4b855c7f171432c34729a13b00",
+      "recordCount": 1037,
+      "bucket": 99
+    },
+    {
+      "id": "m100",
+      "recordsPath": "shards/m100.json",
+      "recordsSha256": "c76260b9a7635589e2932a75884fb6a110f6adf466059372b7eeddd19760a6cc",
+      "recordCount": 1089,
+      "bucket": 100
+    },
+    {
+      "id": "m101",
+      "recordsPath": "shards/m101.json",
+      "recordsSha256": "4bf451e0f94375d75ef389269ae572519e5597fd58f69a8cf92c8299037fdca2",
+      "recordCount": 1063,
+      "bucket": 101
+    },
+    {
+      "id": "m102",
+      "recordsPath": "shards/m102.json",
+      "recordsSha256": "08bd0c6bf4eed8badd8c06c9d115c5d76d058b019983e0c4d8a542378fad2252",
+      "recordCount": 1218,
+      "bucket": 102
+    },
+    {
+      "id": "m103",
+      "recordsPath": "shards/m103.json",
+      "recordsSha256": "ce8ab7147a006573103d240aea603112ad88b6520b9dc22c9dbaeb59864a4b83",
+      "recordCount": 1100,
+      "bucket": 103
+    },
+    {
+      "id": "m104",
+      "recordsPath": "shards/m104.json",
+      "recordsSha256": "05c85847b575ce93b768858f15de6d7fcdf2251ee7da782214deae97c1178ae0",
+      "recordCount": 962,
+      "bucket": 104
+    },
+    {
+      "id": "m105",
+      "recordsPath": "shards/m105.json",
+      "recordsSha256": "3f118eece1e736416f9f47df1c4fa918037dc075098604b6b85ce3e579993cf3",
+      "recordCount": 1111,
+      "bucket": 105
+    },
+    {
+      "id": "m106",
+      "recordsPath": "shards/m106.json",
+      "recordsSha256": "0f2eb7a58c5df639135717beddd95b2daf699df2d8fa02464e75ecf456b488ee",
+      "recordCount": 1117,
+      "bucket": 106
+    },
+    {
+      "id": "m107",
+      "recordsPath": "shards/m107.json",
+      "recordsSha256": "95f0115463305e66702163ab9df84215ccba8d931da0ed593b9435afe605713a",
+      "recordCount": 1051,
+      "bucket": 107
+    },
+    {
+      "id": "m108",
+      "recordsPath": "shards/m108.json",
+      "recordsSha256": "da39f129c084a39a4a1aff985422c555d9eab608fd5a07f9d053be2298ba1911",
+      "recordCount": 1066,
+      "bucket": 108
+    },
+    {
+      "id": "m109",
+      "recordsPath": "shards/m109.json",
+      "recordsSha256": "1f686b73faf053fec5ae36329db57aa6aa8b176abaa6ef5d2f3ba0aa5e1874fb",
+      "recordCount": 1075,
+      "bucket": 109
+    },
+    {
+      "id": "m110",
+      "recordsPath": "shards/m110.json",
+      "recordsSha256": "40cba0d5afdb7df4dcfdce30c0d14b146cd8f08d1ae8e377015fa44398068945",
+      "recordCount": 1062,
+      "bucket": 110
+    },
+    {
+      "id": "m111",
+      "recordsPath": "shards/m111.json",
+      "recordsSha256": "ac4212b681e538707516b7cf52c37025bcd8589b82114bcb3752081956ac8d32",
+      "recordCount": 1041,
+      "bucket": 111
+    },
+    {
+      "id": "m112",
+      "recordsPath": "shards/m112.json",
+      "recordsSha256": "6a2623eb663e36a4ba459130c384497d36a5b4e1235de46dc57c03027031be1a",
+      "recordCount": 1022,
+      "bucket": 112
+    },
+    {
+      "id": "m113",
+      "recordsPath": "shards/m113.json",
+      "recordsSha256": "4fde4b763bfd483f2edff2a22f337f7671eeb7a4e0f149d5dd94f6b872e2ed0a",
+      "recordCount": 1037,
+      "bucket": 113
+    },
+    {
+      "id": "m114",
+      "recordsPath": "shards/m114.json",
+      "recordsSha256": "ecd867f19995c527d5624c74ef02d53dffbaaa7193961ae60a243c455310d126",
+      "recordCount": 1224,
+      "bucket": 114
+    },
+    {
+      "id": "m115",
+      "recordsPath": "shards/m115.json",
+      "recordsSha256": "d9a668d05dd846fc8b42f86b634b2ced4b77ecccc400c09d6165f4ef3af4751a",
+      "recordCount": 1165,
+      "bucket": 115
+    },
+    {
+      "id": "m116",
+      "recordsPath": "shards/m116.json",
+      "recordsSha256": "b0f3720c76910dea4823b5036b9f4a92def94b5e147f0c1f224c55e168e643b5",
+      "recordCount": 1100,
+      "bucket": 116
+    },
+    {
+      "id": "m117",
+      "recordsPath": "shards/m117.json",
+      "recordsSha256": "fc90351ea51eaa9b23589db28b0d2675505789b846931aeb82c99fc6a15e5664",
+      "recordCount": 1146,
+      "bucket": 117
+    },
+    {
+      "id": "m118",
+      "recordsPath": "shards/m118.json",
+      "recordsSha256": "d601d302a7164668086f47ee59c7e1b1d6aa9501936744dbf77f266674294b7a",
+      "recordCount": 1142,
+      "bucket": 118
+    },
+    {
+      "id": "m119",
+      "recordsPath": "shards/m119.json",
+      "recordsSha256": "6cf7b31fa7d0705856ce70c7d9e26e159cdeec841c0b4a923dd0d1bfd06cbc2e",
+      "recordCount": 1154,
+      "bucket": 119
+    },
+    {
+      "id": "m120",
+      "recordsPath": "shards/m120.json",
+      "recordsSha256": "7820b567962202168e4d2efb66a22f5b83c1873f6b668fb619bf0a786d6ef919",
+      "recordCount": 1110,
+      "bucket": 120
+    },
+    {
+      "id": "m121",
+      "recordsPath": "shards/m121.json",
+      "recordsSha256": "6a1f2e973b0c256c9169447667fd4160b10264d6293b972d75d05f7cc55e5cac",
+      "recordCount": 1102,
+      "bucket": 121
+    },
+    {
+      "id": "m122",
+      "recordsPath": "shards/m122.json",
+      "recordsSha256": "38fa6ef132147510ee15786098fc14151fb91c8be15ffe2fe4172c9e68167631",
+      "recordCount": 1087,
+      "bucket": 122
+    },
+    {
+      "id": "m123",
+      "recordsPath": "shards/m123.json",
+      "recordsSha256": "1e0a541deba7cfa1afa88c6d07df585b6e65d0bd8a1070fb0364696bfa6ed07a",
+      "recordCount": 1049,
+      "bucket": 123
+    },
+    {
+      "id": "m124",
+      "recordsPath": "shards/m124.json",
+      "recordsSha256": "ce76d9fa8a0f5e2d54b7a713a37f81746fea83c1753ee643e1f6430f0fa84458",
+      "recordCount": 1142,
+      "bucket": 124
+    },
+    {
+      "id": "m125",
+      "recordsPath": "shards/m125.json",
+      "recordsSha256": "854d2ae636f76c6dfe442a2ae6427b991f78e30589c526e1518f215592230593",
+      "recordCount": 1295,
+      "bucket": 125
+    },
+    {
+      "id": "m126",
+      "recordsPath": "shards/m126.json",
+      "recordsSha256": "b9abbcb516256a3265a6b9ff08b5376ff1ae350086155cc144985f33c5331078",
+      "recordCount": 1082,
+      "bucket": 126
+    },
+    {
+      "id": "m127",
+      "recordsPath": "shards/m127.json",
+      "recordsSha256": "e1d4247520c33ab976b68da434b8d68462b55055a497c454275333ac15014657",
+      "recordCount": 1106,
+      "bucket": 127
+    },
+    {
+      "id": "m128",
+      "recordsPath": "shards/m128.json",
+      "recordsSha256": "6cc8be7b330833c75c14f4a3517919bde5e91f292fda70eff69822ce221783a6",
+      "recordCount": 1065,
+      "bucket": 128
+    },
+    {
+      "id": "m129",
+      "recordsPath": "shards/m129.json",
+      "recordsSha256": "8148c02b8c3acd69a172a53f2d2d7bdc6515e09b19f5ec8dc1f36753bb609fa4",
+      "recordCount": 1112,
+      "bucket": 129
+    },
+    {
+      "id": "m130",
+      "recordsPath": "shards/m130.json",
+      "recordsSha256": "c1548510108290fcb502714d0631e58471a9498a761ddbbb731bbaf242b541eb",
+      "recordCount": 1102,
+      "bucket": 130
+    },
+    {
+      "id": "m131",
+      "recordsPath": "shards/m131.json",
+      "recordsSha256": "40b627b1ec4e3532b876369e6110b613f800108eb968cd69213876f4ca57f581",
+      "recordCount": 1136,
+      "bucket": 131
+    },
+    {
+      "id": "m132",
+      "recordsPath": "shards/m132.json",
+      "recordsSha256": "92070c02c81611927e37e30545521564043ae5d6afc9eae9576fdd2802cb437b",
+      "recordCount": 1082,
+      "bucket": 132
+    },
+    {
+      "id": "m133",
+      "recordsPath": "shards/m133.json",
+      "recordsSha256": "ca3f360c22c86b2e6e75409b99c06b9e03e2b6ca2f28b5ee158a1a18a5cc0b61",
+      "recordCount": 1105,
+      "bucket": 133
+    },
+    {
+      "id": "m134",
+      "recordsPath": "shards/m134.json",
+      "recordsSha256": "f3bced48e51897b8255ecd00222fff5a3366c337a6e41e644326f857752e1958",
+      "recordCount": 1089,
+      "bucket": 134
+    },
+    {
+      "id": "m135",
+      "recordsPath": "shards/m135.json",
+      "recordsSha256": "93dcc9cf7f9ba163dcdcceb75e4a7ebb80a59c0b58d5ba6f831c9554f44bd824",
+      "recordCount": 1072,
+      "bucket": 135
+    },
+    {
+      "id": "m136",
+      "recordsPath": "shards/m136.json",
+      "recordsSha256": "bf1e38a92b51d69971adcfafecd7d936b3cdcf5b1e79877813f6317dd161d10c",
+      "recordCount": 1079,
+      "bucket": 136
+    },
+    {
+      "id": "m137",
+      "recordsPath": "shards/m137.json",
+      "recordsSha256": "0ce65b38dd6b081a127462c58d1c383a49a08ead399150e47c721e4b2905dc3b",
+      "recordCount": 1014,
+      "bucket": 137
+    },
+    {
+      "id": "m138",
+      "recordsPath": "shards/m138.json",
+      "recordsSha256": "48bedad66071a38ba2b73a326c57674f2e52f202abbc0b35a99b8423a8c3469a",
+      "recordCount": 1069,
+      "bucket": 138
+    },
+    {
+      "id": "m139",
+      "recordsPath": "shards/m139.json",
+      "recordsSha256": "5320c6323de87088a072543b4f3de2480ff05fe6065705415e3fae2fc6df101e",
+      "recordCount": 1059,
+      "bucket": 139
+    },
+    {
+      "id": "m140",
+      "recordsPath": "shards/m140.json",
+      "recordsSha256": "00819f86ec2d4e2e32b3a39566b892430ce8e5cbd822e9f6a8b071d3fa6f07fe",
+      "recordCount": 1109,
+      "bucket": 140
+    },
+    {
+      "id": "m141",
+      "recordsPath": "shards/m141.json",
+      "recordsSha256": "6d6bd26acecc0a9daa61c6c0c89a7f11e4876c6227806b43c6011cbbb32f0fd6",
+      "recordCount": 1092,
+      "bucket": 141
+    },
+    {
+      "id": "m142",
+      "recordsPath": "shards/m142.json",
+      "recordsSha256": "2238be17fd1acbd12a555843f3dfb8eb24842753d3826880ac1d8ae79fa8aaa0",
+      "recordCount": 1055,
+      "bucket": 142
+    },
+    {
+      "id": "m143",
+      "recordsPath": "shards/m143.json",
+      "recordsSha256": "cb21dcffe96241d9f7f27596c1de5e7dc1e4edf5c06ee1b0c47a99ecf19bcb1e",
+      "recordCount": 1053,
+      "bucket": 143
+    },
+    {
+      "id": "m144",
+      "recordsPath": "shards/m144.json",
+      "recordsSha256": "10f57f85afb1d2ddd015f2c3f07dc41d427d4ad38d6c012e408c2858f9bef3a1",
+      "recordCount": 1062,
+      "bucket": 144
+    },
+    {
+      "id": "m145",
+      "recordsPath": "shards/m145.json",
+      "recordsSha256": "83425f80d47cf35b4bd6443a45b8ae52f82f6745c5d4b25454ff00ad6f201c59",
+      "recordCount": 1149,
+      "bucket": 145
+    },
+    {
+      "id": "m146",
+      "recordsPath": "shards/m146.json",
+      "recordsSha256": "9331f5dcd809fa413cd2209d856ae6e39e50426b8e1ce68c02136694c69796c4",
+      "recordCount": 1114,
+      "bucket": 146
+    },
+    {
+      "id": "m147",
+      "recordsPath": "shards/m147.json",
+      "recordsSha256": "601dc8c1a876680dfa90e65be3513dc2b8a54b3d6663be990fd3cb77f1b75caf",
+      "recordCount": 1058,
+      "bucket": 147
+    },
+    {
+      "id": "m148",
+      "recordsPath": "shards/m148.json",
+      "recordsSha256": "bd691e31d44fe66ba0f08fbd0fbfd59ce56b53abdbabf1158060bbee5ba0f460",
+      "recordCount": 1175,
+      "bucket": 148
+    },
+    {
+      "id": "m149",
+      "recordsPath": "shards/m149.json",
+      "recordsSha256": "4ea8bbd27c539c5db54b2005daf85926543ddb000de6a666b40e875705f5066a",
+      "recordCount": 1110,
+      "bucket": 149
+    },
+    {
+      "id": "m150",
+      "recordsPath": "shards/m150.json",
+      "recordsSha256": "8c07c9bb0933c146abc3c8d4b0c746d7a8e628d7c2e8749efad3134767632e5c",
+      "recordCount": 1160,
+      "bucket": 150
+    },
+    {
+      "id": "m151",
+      "recordsPath": "shards/m151.json",
+      "recordsSha256": "070fd52f695f5fb88aa906cd396a1832ca473ca6df9ef888364d33f0501810b7",
+      "recordCount": 1101,
+      "bucket": 151
+    },
+    {
+      "id": "m152",
+      "recordsPath": "shards/m152.json",
+      "recordsSha256": "d4c4d3fe2b0263b6655c0611234df0f4ece7cc86372b458b7427e64fe312e5b6",
+      "recordCount": 1110,
+      "bucket": 152
+    },
+    {
+      "id": "m153",
+      "recordsPath": "shards/m153.json",
+      "recordsSha256": "cf58304a3345c698fe4c7c2495b8c0a8ad1a5b1cd34caf02cf62cc47a8af3b27",
+      "recordCount": 1116,
+      "bucket": 153
+    },
+    {
+      "id": "m154",
+      "recordsPath": "shards/m154.json",
+      "recordsSha256": "01404efb2d7a68e9a95741f673c769d4d84a4be8d452927fa1148be2eeeb5075",
+      "recordCount": 1096,
+      "bucket": 154
+    },
+    {
+      "id": "m155",
+      "recordsPath": "shards/m155.json",
+      "recordsSha256": "2d035c283372cd6487089e441902e2bc8f0022a1e70ae7f3c9e8e9a15699d452",
+      "recordCount": 1077,
+      "bucket": 155
+    },
+    {
+      "id": "m156",
+      "recordsPath": "shards/m156.json",
+      "recordsSha256": "f72578f3967059d1b07ecd9221a5034252268c9488d84dd852aa6b905d155d2c",
+      "recordCount": 1120,
+      "bucket": 156
+    },
+    {
+      "id": "m157",
+      "recordsPath": "shards/m157.json",
+      "recordsSha256": "98db6e55865aab98145a3601b9271b74bae07f793ba2edd5bf8a594046ad859e",
+      "recordCount": 1048,
+      "bucket": 157
+    },
+    {
+      "id": "m158",
+      "recordsPath": "shards/m158.json",
+      "recordsSha256": "83d4a6d77f40fdb8c96d0e868362210cc2c8ce3f45384e1fb7b6e4f8a3f4dd30",
+      "recordCount": 1110,
+      "bucket": 158
+    },
+    {
+      "id": "m159",
+      "recordsPath": "shards/m159.json",
+      "recordsSha256": "f193c648c7b94c36855d7115241da3c1192ce79e4a23d6a29571be612c7a00b9",
+      "recordCount": 1159,
+      "bucket": 159
+    },
+    {
+      "id": "m160",
+      "recordsPath": "shards/m160.json",
+      "recordsSha256": "6e63ebb7e10cadfa3cc0e5cc8a85aa959318d860d614987246f26aeab86d7f9c",
+      "recordCount": 1114,
+      "bucket": 160
+    },
+    {
+      "id": "m161",
+      "recordsPath": "shards/m161.json",
+      "recordsSha256": "aad0ab8a00da3978ff870ca6657a4a42876fa9806e00adf32ee291a6fab5cbdd",
+      "recordCount": 1051,
+      "bucket": 161
+    },
+    {
+      "id": "m162",
+      "recordsPath": "shards/m162.json",
+      "recordsSha256": "47d594e52fd63bd37ca306a821e55ccc123eb0e77c5dc06289c57449059823ea",
+      "recordCount": 1140,
+      "bucket": 162
+    },
+    {
+      "id": "m163",
+      "recordsPath": "shards/m163.json",
+      "recordsSha256": "7f32b95550d0bdf10a7ac1af73c70180b9f297a2fd73d4e310859c9e2eded771",
+      "recordCount": 1038,
+      "bucket": 163
+    },
+    {
+      "id": "m164",
+      "recordsPath": "shards/m164.json",
+      "recordsSha256": "810a408734ed11b51100fa8caec3a0cfa7704cc8a289e7cb33ae2088517b4f36",
+      "recordCount": 1266,
+      "bucket": 164
+    },
+    {
+      "id": "m165",
+      "recordsPath": "shards/m165.json",
+      "recordsSha256": "ba677cd912497b61d564aa465aec9a429e347c3e512ee2863c5ca9a0cd555f11",
+      "recordCount": 1133,
+      "bucket": 165
+    },
+    {
+      "id": "m166",
+      "recordsPath": "shards/m166.json",
+      "recordsSha256": "a3fc4442ce2bad0eb6571566205252ac3cafe6598ce3ca852bbc66cc9fbffaa9",
+      "recordCount": 1070,
+      "bucket": 166
+    },
+    {
+      "id": "m167",
+      "recordsPath": "shards/m167.json",
+      "recordsSha256": "f2d2f7dca7165216a5a463b3c05053baf0d63311e50fdef44843c8210bcc4713",
+      "recordCount": 1003,
+      "bucket": 167
+    },
+    {
+      "id": "m168",
+      "recordsPath": "shards/m168.json",
+      "recordsSha256": "c2e53129d1f99430db188df412c649dfede596e33f724a89a8659eb2d54900e9",
+      "recordCount": 1066,
+      "bucket": 168
+    },
+    {
+      "id": "m169",
+      "recordsPath": "shards/m169.json",
+      "recordsSha256": "465da6cde199816b9919b77358072278442b79b98b62d9b74476ff7efd5e38c6",
+      "recordCount": 1093,
+      "bucket": 169
+    },
+    {
+      "id": "m170",
+      "recordsPath": "shards/m170.json",
+      "recordsSha256": "21321fb97fd7be4708c75d817fd3b47dfce36f321a943622260c38bbc187557f",
+      "recordCount": 1191,
+      "bucket": 170
+    },
+    {
+      "id": "m171",
+      "recordsPath": "shards/m171.json",
+      "recordsSha256": "123ae7e864510401776037c5ffef575a55a5421f5001cc4c29c8a44b541b05cd",
+      "recordCount": 1014,
+      "bucket": 171
+    },
+    {
+      "id": "m172",
+      "recordsPath": "shards/m172.json",
+      "recordsSha256": "d509461bfe4e5b485f18d7f3714b1a4a5342cf3c61b4755794df4e71591ff880",
+      "recordCount": 1151,
+      "bucket": 172
+    },
+    {
+      "id": "m173",
+      "recordsPath": "shards/m173.json",
+      "recordsSha256": "7b0442f8ec87fc33f634990be8dc793444d26ff43d241d6c59fc948e3e06cc5f",
+      "recordCount": 1034,
+      "bucket": 173
+    },
+    {
+      "id": "m174",
+      "recordsPath": "shards/m174.json",
+      "recordsSha256": "18236bc2207f16590e40d1087dd109fdb36105fec6d2fd790481cd304d629975",
+      "recordCount": 1091,
+      "bucket": 174
+    },
+    {
+      "id": "m175",
+      "recordsPath": "shards/m175.json",
+      "recordsSha256": "59ac6d5e19c703fec0264ae6e6c29a133185b0bc7f997908ece982a91a440d56",
+      "recordCount": 1100,
+      "bucket": 175
+    },
+    {
+      "id": "m176",
+      "recordsPath": "shards/m176.json",
+      "recordsSha256": "46465e6c9fb8a98e29d9e5a9f093076a4ca539fdffc19636dacde17db0302a28",
+      "recordCount": 1121,
+      "bucket": 176
+    },
+    {
+      "id": "m177",
+      "recordsPath": "shards/m177.json",
+      "recordsSha256": "1d2fb33168ad44dd429d33672794d5f4542e063a7f66147ae3ed9cc723aa41d9",
+      "recordCount": 1133,
+      "bucket": 177
+    },
+    {
+      "id": "m178",
+      "recordsPath": "shards/m178.json",
+      "recordsSha256": "af92acb4bb9e1d50c2236763e1afab09ec9d769e993901a2a8b1e0138312e509",
+      "recordCount": 1058,
+      "bucket": 178
+    },
+    {
+      "id": "m179",
+      "recordsPath": "shards/m179.json",
+      "recordsSha256": "28b23ccfd0b991bc92e2ce78a868cee1d66e3231f6f6461c641fc6bf634b09ef",
+      "recordCount": 1052,
+      "bucket": 179
+    },
+    {
+      "id": "m180",
+      "recordsPath": "shards/m180.json",
+      "recordsSha256": "f1fd45c6d7f8fa1ff158cc812ab33ff1bc9dd233dbde801788f56531eb1f69ed",
+      "recordCount": 1068,
+      "bucket": 180
+    },
+    {
+      "id": "m181",
+      "recordsPath": "shards/m181.json",
+      "recordsSha256": "3e6c6e1cceb7abeda4a4d5d2b52964b24f748f060cde3a35283f18c09661e440",
+      "recordCount": 1196,
+      "bucket": 181
+    },
+    {
+      "id": "m182",
+      "recordsPath": "shards/m182.json",
+      "recordsSha256": "8acc61ac0a8e07cae102a9e992fe40bd6c98597fb6bab4034a6494b67a4de096",
+      "recordCount": 1051,
+      "bucket": 182
+    },
+    {
+      "id": "m183",
+      "recordsPath": "shards/m183.json",
+      "recordsSha256": "495b6e083becd29810164d8e44dc087d712a4e7678c1a578b3927ac68c71fca7",
+      "recordCount": 1219,
+      "bucket": 183
+    },
+    {
+      "id": "m184",
+      "recordsPath": "shards/m184.json",
+      "recordsSha256": "c0549e371e025e029a316b2ce7b6a46246dc6612609a60cff18fc95e2bfb3a44",
+      "recordCount": 1166,
+      "bucket": 184
+    },
+    {
+      "id": "m185",
+      "recordsPath": "shards/m185.json",
+      "recordsSha256": "fddf15361570acd557ac29dd3afc503bebe0e536d0eee39fb1403b71cee52108",
+      "recordCount": 1122,
+      "bucket": 185
+    },
+    {
+      "id": "m186",
+      "recordsPath": "shards/m186.json",
+      "recordsSha256": "b89653e517273e4ee6c49c308c37fa722ea4daf41a0afe29fcafd88ad7f0f589",
+      "recordCount": 1120,
+      "bucket": 186
+    },
+    {
+      "id": "m187",
+      "recordsPath": "shards/m187.json",
+      "recordsSha256": "b57be3ec4131f238450506169f85725160b4ee2e50a768c505f18de4c22e2e1a",
+      "recordCount": 1151,
+      "bucket": 187
+    },
+    {
+      "id": "m188",
+      "recordsPath": "shards/m188.json",
+      "recordsSha256": "4f1d31ced955cdd2dd08cf717dd58ccf8d392059099527990c6c65f84c7ad487",
+      "recordCount": 1063,
+      "bucket": 188
+    },
+    {
+      "id": "m189",
+      "recordsPath": "shards/m189.json",
+      "recordsSha256": "12c0342980e941cd86fcffab6086a4d28647ea3fe14c84888c814fcceb0cb7e3",
+      "recordCount": 1139,
+      "bucket": 189
+    },
+    {
+      "id": "m190",
+      "recordsPath": "shards/m190.json",
+      "recordsSha256": "7634094d46b326828112ea64cc9a790cedcf43c14657b38975f83fd123c0c3d3",
+      "recordCount": 1081,
+      "bucket": 190
+    },
+    {
+      "id": "m191",
+      "recordsPath": "shards/m191.json",
+      "recordsSha256": "3913627572537cab024b72ba5c79bb1bfe6b174ac1c8e14f3ba491cabe38679b",
+      "recordCount": 1115,
+      "bucket": 191
+    },
+    {
+      "id": "m192",
+      "recordsPath": "shards/m192.json",
+      "recordsSha256": "f99f3e42e1ea11a031f4e184fccf2383d368a4bc8f96a00a759b5c5df5045c0b",
+      "recordCount": 1655,
+      "bucket": 192
+    },
+    {
+      "id": "m193",
+      "recordsPath": "shards/m193.json",
+      "recordsSha256": "a77cec49a5942705e5f9c36083f399a1e89b03ea25482356b939bd0f412cab63",
+      "recordCount": 1027,
+      "bucket": 193
+    },
+    {
+      "id": "m194",
+      "recordsPath": "shards/m194.json",
+      "recordsSha256": "4e8732cc1886a7ed53e681455729928bf99a2a5ba72b4ba1c6302e8eb07ee4a8",
+      "recordCount": 1221,
+      "bucket": 194
+    },
+    {
+      "id": "m195",
+      "recordsPath": "shards/m195.json",
+      "recordsSha256": "5b1cac5632426897b2599fc7ad5b0d846af9e369662e81fa2f9fb2865cf31012",
+      "recordCount": 1104,
+      "bucket": 195
+    },
+    {
+      "id": "m196",
+      "recordsPath": "shards/m196.json",
+      "recordsSha256": "a32c9df9e2364eadd16cee6e52cdf372b7c913c868a647ab124dc3b617df1f1f",
+      "recordCount": 1092,
+      "bucket": 196
+    },
+    {
+      "id": "m197",
+      "recordsPath": "shards/m197.json",
+      "recordsSha256": "cf92b58ad49ce7d5eafb29c7144479c9c5049f4d00b7500b8f40eb57570c4b1c",
+      "recordCount": 1072,
+      "bucket": 197
+    },
+    {
+      "id": "m198",
+      "recordsPath": "shards/m198.json",
+      "recordsSha256": "9a208d5dd16df3872cb158358cec07f259b8dbf7c8a0a2949b09a8e1f19b262c",
+      "recordCount": 1107,
+      "bucket": 198
+    },
+    {
+      "id": "m199",
+      "recordsPath": "shards/m199.json",
+      "recordsSha256": "e5ef4f0a6987481e38a16017d552b76335343bc4c3541520c0f01f289d4b8bbb",
+      "recordCount": 1097,
+      "bucket": 199
+    },
+    {
+      "id": "m200",
+      "recordsPath": "shards/m200.json",
+      "recordsSha256": "ec8da08fe506b0d9702afc60a5c6803733f37233e150b6312743e201f4e82bf7",
+      "recordCount": 1066,
+      "bucket": 200
+    },
+    {
+      "id": "m201",
+      "recordsPath": "shards/m201.json",
+      "recordsSha256": "bcf106e73631a471d30a56e40ac5cf916cb8191e40d1a7e20250da3b7b8e325c",
+      "recordCount": 1148,
+      "bucket": 201
+    },
+    {
+      "id": "m202",
+      "recordsPath": "shards/m202.json",
+      "recordsSha256": "ece2f0b877a69532fdc9c5aa8e60a1c1513c3619573de51ddda8be7c3d38faf0",
+      "recordCount": 1213,
+      "bucket": 202
+    },
+    {
+      "id": "m203",
+      "recordsPath": "shards/m203.json",
+      "recordsSha256": "2b9ab9859798af0b5433ca5aab80355bf276479fece56358f5534d4c89d146bc",
+      "recordCount": 1067,
+      "bucket": 203
+    },
+    {
+      "id": "m204",
+      "recordsPath": "shards/m204.json",
+      "recordsSha256": "599f44167c163af5eab31fb546f8c528aa22393a06eeb947790f6173bb6b174a",
+      "recordCount": 1061,
+      "bucket": 204
+    },
+    {
+      "id": "m205",
+      "recordsPath": "shards/m205.json",
+      "recordsSha256": "8a7b491e8928b1af65afc288fdd366fd82a457cf6f680329d03a38aebd18492c",
+      "recordCount": 1104,
+      "bucket": 205
+    },
+    {
+      "id": "m206",
+      "recordsPath": "shards/m206.json",
+      "recordsSha256": "8f903dfd8f6770a3d5079c8084512ef3f72ee105d7cc7db3df7423bf1e06bfdb",
+      "recordCount": 1041,
+      "bucket": 206
+    },
+    {
+      "id": "m207",
+      "recordsPath": "shards/m207.json",
+      "recordsSha256": "a840dcfee88b2271ef681313303692805bcaf249d4414087f2648ad06485f254",
+      "recordCount": 1123,
+      "bucket": 207
+    },
+    {
+      "id": "m208",
+      "recordsPath": "shards/m208.json",
+      "recordsSha256": "2dec6f1bbe8b45e5854aa20b80735f217b057f8eca9103f67b8161aadc5cd599",
+      "recordCount": 1095,
+      "bucket": 208
+    },
+    {
+      "id": "m209",
+      "recordsPath": "shards/m209.json",
+      "recordsSha256": "140eb07434ac32b6315b27a33d4aa8caf21183707c943130e1837ffe371d1de4",
+      "recordCount": 1083,
+      "bucket": 209
+    },
+    {
+      "id": "m210",
+      "recordsPath": "shards/m210.json",
+      "recordsSha256": "d6c676de56250ee7287a221db32dcbadae4203a9b1c3c81646072f3b3f356124",
+      "recordCount": 1158,
+      "bucket": 210
+    },
+    {
+      "id": "m211",
+      "recordsPath": "shards/m211.json",
+      "recordsSha256": "3409df781a828395ee91d5fa9739de8ed31aed6f619c989717450599de717575",
+      "recordCount": 1030,
+      "bucket": 211
+    },
+    {
+      "id": "m212",
+      "recordsPath": "shards/m212.json",
+      "recordsSha256": "3a72d3d3c8dc0e2d16d1648aab13a1235be057c3c9c7e64cbb6393af74d2c6fc",
+      "recordCount": 1204,
+      "bucket": 212
+    },
+    {
+      "id": "m213",
+      "recordsPath": "shards/m213.json",
+      "recordsSha256": "e06600f84f94ad39e052e9681f670959576549acdde64436948524403c308427",
+      "recordCount": 1133,
+      "bucket": 213
+    },
+    {
+      "id": "m214",
+      "recordsPath": "shards/m214.json",
+      "recordsSha256": "a38aa0999288d90afc1508fff5160e9e861de562b9c9f2120686819d0734424a",
+      "recordCount": 1108,
+      "bucket": 214
+    },
+    {
+      "id": "m215",
+      "recordsPath": "shards/m215.json",
+      "recordsSha256": "bbdf53a8dc03a45bbd49327c3b244990f5d609469932bad8b61f7f80e778233e",
+      "recordCount": 1171,
+      "bucket": 215
+    },
+    {
+      "id": "m216",
+      "recordsPath": "shards/m216.json",
+      "recordsSha256": "c43a389a83e81503b9244b2cd8e39cfccb1b8ff16ad8cb5ce92c37e34dec3004",
+      "recordCount": 1054,
+      "bucket": 216
+    },
+    {
+      "id": "m217",
+      "recordsPath": "shards/m217.json",
+      "recordsSha256": "fe0df3ce6edf3c38b55564cf48cd09a47860723eb988f40818c3e5f609358c33",
+      "recordCount": 1055,
+      "bucket": 217
+    },
+    {
+      "id": "m218",
+      "recordsPath": "shards/m218.json",
+      "recordsSha256": "4aa687cdf2120c4a9a97b2080942d637dce85415b2b5916fc0102cf3680a6a88",
+      "recordCount": 1092,
+      "bucket": 218
+    },
+    {
+      "id": "m219",
+      "recordsPath": "shards/m219.json",
+      "recordsSha256": "86430e200b1be099bf039c48b24aeb67387391f5318364487d2d7076525b9955",
+      "recordCount": 1089,
+      "bucket": 219
+    },
+    {
+      "id": "m220",
+      "recordsPath": "shards/m220.json",
+      "recordsSha256": "5350346fe013cb3fe387c4c73eb7e51116645575b08384cbd0ad12f1581c040e",
+      "recordCount": 1077,
+      "bucket": 220
+    },
+    {
+      "id": "m221",
+      "recordsPath": "shards/m221.json",
+      "recordsSha256": "18fcbdcf83b8d3d7b3247051dbd940eb603f4644bf33d30bec03d201a638f512",
+      "recordCount": 1077,
+      "bucket": 221
+    },
+    {
+      "id": "m222",
+      "recordsPath": "shards/m222.json",
+      "recordsSha256": "16e68b9d05334ed7905a4abe7ae939862dea4c37ac8aa3d873a5a3b1900c9630",
+      "recordCount": 1072,
+      "bucket": 222
+    },
+    {
+      "id": "m223",
+      "recordsPath": "shards/m223.json",
+      "recordsSha256": "ef73aad4bc9f4c1580b61ab711f365082aa769262984d93c63b8315db927e805",
+      "recordCount": 1091,
+      "bucket": 223
+    },
+    {
+      "id": "m224",
+      "recordsPath": "shards/m224.json",
+      "recordsSha256": "a20b92346a7322d087406db2bfe3a9b05e3de1ad056b21ee5d4b3534b80043bd",
+      "recordCount": 1098,
+      "bucket": 224
+    },
+    {
+      "id": "m225",
+      "recordsPath": "shards/m225.json",
+      "recordsSha256": "de27477e3dd3a0392c476177d08403b0330ce55a20d045b6a3d2242c0e3db16d",
+      "recordCount": 1076,
+      "bucket": 225
+    },
+    {
+      "id": "m226",
+      "recordsPath": "shards/m226.json",
+      "recordsSha256": "b9ada22adb652e91d33409d2e7fd0917e0531c43606f227568ee381bf4371485",
+      "recordCount": 1094,
+      "bucket": 226
+    },
+    {
+      "id": "m227",
+      "recordsPath": "shards/m227.json",
+      "recordsSha256": "dc9b122aa94fce03e8815718d65d3f43e2fff31d4a30f46dcfc940f9f9076542",
+      "recordCount": 1064,
+      "bucket": 227
+    },
+    {
+      "id": "m228",
+      "recordsPath": "shards/m228.json",
+      "recordsSha256": "4a4cf145b642c4c9d19b818a026d160ad2037fd7a9904829a8502f087b23f311",
+      "recordCount": 1082,
+      "bucket": 228
+    },
+    {
+      "id": "m229",
+      "recordsPath": "shards/m229.json",
+      "recordsSha256": "ac883bd098ad8292aa1b3cfe41cf28c8214f2d4c69f675073c6c4eef5a330c92",
+      "recordCount": 1073,
+      "bucket": 229
+    },
+    {
+      "id": "m230",
+      "recordsPath": "shards/m230.json",
+      "recordsSha256": "3f1e78af77e42a38646abbdc2cf7372e6276b88d04f752a8733c514b48d796f5",
+      "recordCount": 1046,
+      "bucket": 230
+    },
+    {
+      "id": "m231",
+      "recordsPath": "shards/m231.json",
+      "recordsSha256": "dd0947f7037fe81b85368d8e27b9e1c1da9a4cecaf41f4d51f062e5cbdbf1396",
+      "recordCount": 1103,
+      "bucket": 231
+    },
+    {
+      "id": "m232",
+      "recordsPath": "shards/m232.json",
+      "recordsSha256": "6c9840d5f125b7e019799a7f72318d22463f6d6b5b8d04f3b4d9d6201be95fe2",
+      "recordCount": 1055,
+      "bucket": 232
+    },
+    {
+      "id": "m233",
+      "recordsPath": "shards/m233.json",
+      "recordsSha256": "ac476b9218778efc785a0dc25e4aef4bd75c7dffec05226ae8596070efd7638c",
+      "recordCount": 1075,
+      "bucket": 233
+    },
+    {
+      "id": "m234",
+      "recordsPath": "shards/m234.json",
+      "recordsSha256": "b4a40cb45ee20288f11a121667fcde6d8801f4dd19199027af4da5ede49f3b5a",
+      "recordCount": 1067,
+      "bucket": 234
+    },
+    {
+      "id": "m235",
+      "recordsPath": "shards/m235.json",
+      "recordsSha256": "15344b8ba334dfb20520e2697a1694f8dd306fc6f8564cf1a8d0588a12271561",
+      "recordCount": 1028,
+      "bucket": 235
+    },
+    {
+      "id": "m236",
+      "recordsPath": "shards/m236.json",
+      "recordsSha256": "967c1a02a16d7e9b5346e2750a40aaa5550de5c1a1f1dd9ec78363337fdc7b6d",
+      "recordCount": 1080,
+      "bucket": 236
+    },
+    {
+      "id": "m237",
+      "recordsPath": "shards/m237.json",
+      "recordsSha256": "450745859cceb91b3b13fe79d7debd5ca579159bd4714e2033e1fc2936f732e0",
+      "recordCount": 1068,
+      "bucket": 237
+    },
+    {
+      "id": "m238",
+      "recordsPath": "shards/m238.json",
+      "recordsSha256": "2805cdf11a1df00f5ab26c123d25e8a7473ed5cb39a06b17dd776a58db850ecb",
+      "recordCount": 1104,
+      "bucket": 238
+    },
+    {
+      "id": "m239",
+      "recordsPath": "shards/m239.json",
+      "recordsSha256": "d04a54f9b19b2196b3d4f5f60d92e5cbe65c504b52fbae69660c0c0862a4e15e",
+      "recordCount": 1017,
+      "bucket": 239
+    },
+    {
+      "id": "m240",
+      "recordsPath": "shards/m240.json",
+      "recordsSha256": "2e9c13fb2e5b6014e7dbb0bada8f2941029f30af4ff3ea4ba647bf5baa0e2ac6",
+      "recordCount": 1071,
+      "bucket": 240
+    },
+    {
+      "id": "m241",
+      "recordsPath": "shards/m241.json",
+      "recordsSha256": "82f61a552459dd1acaf50f7da295b6ab0a477ee747d42b8d6fab1874ebd0e237",
+      "recordCount": 1123,
+      "bucket": 241
+    },
+    {
+      "id": "m242",
+      "recordsPath": "shards/m242.json",
+      "recordsSha256": "d888566ef2513cea9e2425ea31bd3325ca48374176bff95fc4d5c396a31f6bfe",
+      "recordCount": 1085,
+      "bucket": 242
+    },
+    {
+      "id": "m243",
+      "recordsPath": "shards/m243.json",
+      "recordsSha256": "a2eed1f2cccd28adc37fffd5fe636534b129bf8489b488dc660bff53cfb000d9",
+      "recordCount": 1144,
+      "bucket": 243
+    },
+    {
+      "id": "m244",
+      "recordsPath": "shards/m244.json",
+      "recordsSha256": "83e9cdf8b61bfe4ebfd4dd69b4169e34c5b523f3da003d24f53280fe5577e41e",
+      "recordCount": 1215,
+      "bucket": 244
+    },
+    {
+      "id": "m245",
+      "recordsPath": "shards/m245.json",
+      "recordsSha256": "ebba16558da261964e2fe98e27092f4086387d2d3f035cbf050dcd3918ad04ec",
+      "recordCount": 1131,
+      "bucket": 245
+    },
+    {
+      "id": "m246",
+      "recordsPath": "shards/m246.json",
+      "recordsSha256": "27cb70e96c7934082694807ae63435cbd5bce6a1b6679010f3a50a5976d34155",
+      "recordCount": 1073,
+      "bucket": 246
+    },
+    {
+      "id": "m247",
+      "recordsPath": "shards/m247.json",
+      "recordsSha256": "1a2bc3e2e579ce6fcebb429c5588a0f521307eda30777cb53eb7a00c7ec05e40",
+      "recordCount": 1140,
+      "bucket": 247
+    },
+    {
+      "id": "m248",
+      "recordsPath": "shards/m248.json",
+      "recordsSha256": "3d24af3281d9e560aa372bf02621161f81d43900a183957b58fe7648c81b980d",
+      "recordCount": 1059,
+      "bucket": 248
+    },
+    {
+      "id": "m249",
+      "recordsPath": "shards/m249.json",
+      "recordsSha256": "ee46b40f04003589abfdcb0928390ec30b68a72ead9fb82f1bd0b243dd9411b7",
+      "recordCount": 1083,
+      "bucket": 249
+    },
+    {
+      "id": "m250",
+      "recordsPath": "shards/m250.json",
+      "recordsSha256": "fcb167360f88254b900a8a3ce7e5117bcefd0a38905bc9aa0fb8dd8abae5b3d8",
+      "recordCount": 1125,
+      "bucket": 250
+    },
+    {
+      "id": "m251",
+      "recordsPath": "shards/m251.json",
+      "recordsSha256": "d783663733d7985d750ee44194a011fb732ac3bd5757e6543668ddb129b5cb10",
+      "recordCount": 1028,
+      "bucket": 251
+    },
+    {
+      "id": "m252",
+      "recordsPath": "shards/m252.json",
+      "recordsSha256": "b480c15e280c681d45604eed4d3de37ba5d1f4cd85951ac356e59166818d04a2",
+      "recordCount": 1115,
+      "bucket": 252
+    },
+    {
+      "id": "m253",
+      "recordsPath": "shards/m253.json",
+      "recordsSha256": "7c351319e66bb03867008d27cee5edfe10abfaa3453a49a00294847427ebd828",
+      "recordCount": 999,
+      "bucket": 253
+    },
+    {
+      "id": "m254",
+      "recordsPath": "shards/m254.json",
+      "recordsSha256": "0ac88b75f8584989951a722bfe7d7342273e5e41ece8a59aaaa56c6715cf6147",
+      "recordCount": 1073,
+      "bucket": 254
+    },
+    {
+      "id": "m255",
+      "recordsPath": "shards/m255.json",
+      "recordsSha256": "17ce9fe03e4a825e91510f78c12e1a4070d46d3b6b477ce61d0d1b1fb645c94c",
+      "recordCount": 1126,
+      "bucket": 255
+    }
+  ],
+  "annotationIndexes": [
+    {
+      "build": "GRCh37",
+      "recordsPath": "annotation/dbsnp-grch37.json",
+      "recordsSha256": "92b4a65eb6058b7e33f8b49da384f7ca12c7a79ba09753a63036e1516b24ef68",
+      "recordCount": 352551,
+      "matchedRsidCount": 165752,
+      "missingRsidCount": 21010,
+      "sourcePath": ".evidence-cache/dbsnp/GRCh37/dbsnp.vcf.gz"
+    },
+    {
+      "build": "GRCh38",
+      "recordsPath": "annotation/dbsnp-grch38.json",
+      "recordsSha256": "d764f8e12c19551ab81e0886380e69e8e7ef097c29ac7548bb33ad3bee2693ca",
+      "recordCount": 361789,
+      "matchedRsidCount": 165750,
+      "missingRsidCount": 21012,
+      "sourcePath": ".evidence-cache/dbsnp/GRCh38/dbsnp.vcf.gz"
+    }
+  ],
+  "indelAnnotationIndexes": [
+    {
+      "build": "GRCh37",
+      "recordsPath": "annotation/dbsnp-indels-grch37.json",
+      "recordsSha256": "6332b645c9625e789a4faee0698effa9cb3f4cdb29c3ec25eb70195aa36a72ee",
+      "recordCount": 20639,
+      "matchedRsidCount": 18984,
+      "missingRsidCount": 167778,
+      "sourcePath": ".evidence-cache/dbsnp/GRCh37/dbsnp.vcf.gz"
+    },
+    {
+      "build": "GRCh38",
+      "recordsPath": "annotation/dbsnp-indels-grch38.json",
+      "recordsSha256": "e91fa477ff328bef1b0d86ee525a3166248cf16265b09cfca287d787bee62270",
+      "recordCount": 20520,
+      "matchedRsidCount": 18984,
+      "missingRsidCount": 167778,
+      "sourcePath": ".evidence-cache/dbsnp/GRCh38/dbsnp.vcf.gz"
+    }
+  ],
+  "recordCount": 281069,
+  "attribution": "Local Deana evidence pack built from public ClinVar, CPIC, GWAS Catalog, PharmGKB, PubMed citation metadata, and gnomAD context. User marker IDs and genotypes are matched locally in the browser.",
+  "sources": [
+    {
+      "id": "clinvar",
+      "name": "ClinVar",
+      "release": "ClinVar variant_summary bulk TSV; sha256 acc8e6aef2f6",
+      "url": "https://www.ncbi.nlm.nih.gov/clinvar/docs/downloads/",
+      "role": "primary"
+    },
+    {
+      "id": "gwas",
+      "name": "GWAS Catalog",
+      "release": "GWAS Catalog association export; sha256 ea97dc7c060f",
+      "url": "https://www.ebi.ac.uk/gwas/downloads",
+      "role": "primary"
+    },
+    {
+      "id": "cpic",
+      "name": "CPIC",
+      "release": "CPIC API variant and pair data; sha256 1b87859e295d",
+      "url": "https://cpicpgx.org/api-and-database/",
+      "role": "primary"
+    },
+    {
+      "id": "pharmgkb",
+      "name": "PharmGKB",
+      "release": "PharmGKB clinical annotations bulk download; sha256 f944c181dded",
+      "url": "https://www.pharmgkb.org/downloads",
+      "role": "primary"
+    },
+    {
+      "id": "clingen",
+      "name": "ClinGen",
+      "release": "ClinGen gene-disease validity classifications; sha256 bd9ec8e36f26",
+      "url": "https://clinicalgenome.org/",
+      "role": "primary"
+    },
+    {
+      "id": "pubmed",
+      "name": "PubMed",
+      "release": "PubMed citation metadata carried by source rows",
+      "url": "https://www.ncbi.nlm.nih.gov/books/NBK25497/",
+      "role": "citation"
+    },
+    {
+      "id": "gnomad",
+      "name": "gnomAD",
+      "release": "Curated gnomAD context from Deana seed pack",
+      "url": "https://gnomad.broadinstitute.org/",
+      "role": "frequency-context"
+    },
+    {
+      "id": "snpedia",
+      "name": "SNPedia",
+      "release": "SNPedia cached page export from bots.snpedia.com; sha256 388195643d96",
+      "url": "https://bots.snpedia.com/index.php/Bulk",
+      "role": "supplementary"
+    }
+  ]
+}

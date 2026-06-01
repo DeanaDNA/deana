@@ -10,7 +10,7 @@ import {
   MatchedMarker,
 } from "../types";
 
-export const LOCAL_EVIDENCE_PACK_VERSION = "2026-05-core-5";
+export const LOCAL_EVIDENCE_PACK_VERSION = "2026-06-core";
 export const LOCAL_EVIDENCE_PACK_BASE = `/evidence-packs/${LOCAL_EVIDENCE_PACK_VERSION}`;
 
 const DEFAULT_SHARD_MODULO = 256;
